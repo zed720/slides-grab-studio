@@ -13,17 +13,31 @@ echo "🎬 Slides-Grab Web Studio 켜는 중…"
 echo "─────────────────────────────────────"
 echo ""
 
-# pnpm 있는지 확인
-if ! command -v pnpm >/dev/null 2>&1; then
-  echo "⚠️  pnpm 이 아직 설치되지 않았어요."
+# Node.js (npm) 있는지 확인 — 이건 사용자가 직접 설치해야 함 (GUI .pkg)
+if ! command -v npm >/dev/null 2>&1; then
+  echo "⚠️  Node.js 가 아직 설치되지 않았어요."
   echo ""
-  echo "   터미널에서 한 번만 실행해 주세요:"
-  echo "       npm install -g pnpm"
-  echo ""
-  echo "   (npm 도 없다면 먼저 Node.js 를 설치해야 해요 — README 참고)"
+  echo "   nodejs.org/ko 에서 LTS 버전을 받아 설치 후 다시 시도해 주세요."
+  echo "   (README 의 '1-① Node.js 설치' 참고)"
   echo ""
   read -p "확인했으면 Enter 키를 눌러 창을 닫아 주세요. "
   exit 1
+fi
+
+# pnpm 자동 설치 — 사용자가 터미널에 직접 칠 명령 줄이기
+if ! command -v pnpm >/dev/null 2>&1; then
+  echo "📦 패키지 도구 (pnpm) 자동 설치 중…"
+  if ! npm install -g pnpm 2>&1; then
+    echo ""
+    echo "⚠️  자동 설치에 실패했어요 (권한 문제일 수 있어요)."
+    echo "   터미널에서 한 번만 실행해 주세요:"
+    echo "       sudo npm install -g pnpm"
+    echo ""
+    read -p "확인했으면 Enter 키를 눌러 창을 닫아 주세요. "
+    exit 1
+  fi
+  echo "   ✓ pnpm 설치 완료"
+  echo ""
 fi
 
 # 의존성이 아직 깔리지 않았으면 자동으로 받아옴

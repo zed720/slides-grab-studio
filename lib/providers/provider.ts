@@ -18,6 +18,12 @@ export type ProviderStatus = {
     status: SlidesGrabSkillStatus;
     error: string | null;
   } | null;
+  // 본체 자동 설치 진행 상태. 진행 중이거나 실패했을 때만 채워짐.
+  // null = idle (시도 안 했거나 이미 installed)
+  bodyInstall: {
+    status: "installing" | "failed";
+    error: string | null;
+  } | null;
 };
 
 export interface Provider {

@@ -173,6 +173,25 @@ function spawnP(cmd: string, args: string[], cwd?: string): Promise<void> {
         console.error(
           `[skills] install exited with code ${code ?? "?"}\n${tail}`,
         );
+        // Claude Code 로그인 안 된 상태로 `claude -p` 호출 시 stderr 에 인증 관련 키워드.
+        // 사용자가 행동할 수 있도록 친절한 한국어 안내로 변환.
+        const authKeywords = [
+          "not authenticated",
+          "please run `claude`",
+          "please log in",
+          "/login",
+          "invalid api key",
+          "anthropic_api_key",
+        ];
+        const lower = tail.toLowerCase();
+        if (authKeywords.some((k) => lower.includes(k.toLowerCase()))) {
+          reject(
+            new Error(
+              "Claude 로그인이 안 되어 있어요. 터미널에서 `claude` 를 한 번 실행해 로그인한 뒤 다시 시도해 주세요.",
+            ),
+          );
+          return;
+        }
         reject(
           new Error(
             `기술 설치에 실패했어요. ${tail.slice(0, 400) || "(자세한 사유 없음)"}`,

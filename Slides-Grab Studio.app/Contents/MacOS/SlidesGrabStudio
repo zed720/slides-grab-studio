@@ -1,0 +1,22 @@
+#!/bin/bash
+# Slides-Grab Studio — .app 더블클릭 launcher.
+# 새 Terminal 창에서 부모 폴더의 start.command 를 실행한다 (사용자가 진행 로그를 볼 수 있도록).
+#
+# 구조 기대:
+#   bitreespark_II/
+#     Slides-Grab Studio.app/Contents/MacOS/SlidesGrabStudio   ← 이 파일
+#     start.command                                            ← 진짜 launcher
+
+set -e
+
+# 이 스크립트 위치 기준으로 3 단계 위가 bitreespark_II 폴더
+BUNDLE_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
+START_CMD="$BUNDLE_DIR/start.command"
+
+if [ ! -f "$START_CMD" ]; then
+  /usr/bin/osascript -e "display dialog \"start.command 를 찾지 못했어요.\n$START_CMD\" buttons {\"확인\"} default button \"확인\" with icon caution with title \"Slides-Grab Studio\""
+  exit 1
+fi
+
+# 새 Terminal 창에서 start.command 실행 (사용자가 진행 로그 볼 수 있게)
+/usr/bin/open -a Terminal "$START_CMD"

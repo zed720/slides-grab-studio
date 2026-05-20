@@ -56,11 +56,13 @@ export default function CheckPage() {
     load();
   }, [load]);
 
-  // 어떤 provider 라도 skill 설치 중이면 1s 간격 자동 폴링 — 완료/실패 시 자동 멈춤
+  // 어떤 provider 라도 skill 설치 중이거나 본체 설치 중이면 1s 간격 자동 폴링
   useEffect(() => {
     if (state.kind !== "ok") return;
     const anyInstalling = state.providers.some(
-      (p) => p.slidesGrabSkill?.status === "installing",
+      (p) =>
+        p.slidesGrabSkill?.status === "installing" ||
+        p.bodyInstall?.status === "installing",
     );
     if (!anyInstalling) return;
     const t = setInterval(() => {
@@ -92,6 +94,34 @@ export default function CheckPage() {
             err instanceof Error
               ? err.message
               : "기술 설치를 시작하지 못했어요.",
+        });
+      }
+    },
+    [load],
+  );
+
+  const installProviderBody = useCallback(
+    async (provider: ProviderId) => {
+      try {
+        const res = await fetch("/api/providers/install", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ provider }),
+        });
+        if (!res.ok) {
+          const body = (await res.json().catch(() => null)) as {
+            error?: string;
+          } | null;
+          throw new Error(body?.error ?? "설치를 시작하지 못했어요.");
+        }
+        await load();
+      } catch (err) {
+        setState({
+          kind: "error",
+          message:
+            err instanceof Error
+              ? err.message
+              : "설치를 시작하지 못했어요.",
         });
       }
     },
@@ -133,6 +163,7 @@ export default function CheckPage() {
                 selected={selectedId === p.id}
                 onSelect={() => setSelectedId(p.id)}
                 onInstallSkill={() => installSlidesGrabSkill(p.id)}
+                onInstallBody={() => installProviderBody(p.id)}
               />
             ))}
           </div>
@@ -203,15 +234,18 @@ function ProviderCard({
   selected,
   onSelect,
   onInstallSkill,
+  onInstallBody,
 }: {
   provider: ProviderStatus;
   selected: boolean;
   onSelect: () => void;
   onInstallSkill: () => void;
+  onInstallBody: () => void;
 }) {
   const installed = provider.installed;
   const usable = isProviderUsable(provider);
   const skill = provider.slidesGrabSkill;
+  const bodyInstall = provider.bodyInstall;
   return (
     <article
       className={
@@ -240,6 +274,22 @@ function ProviderCard({
             <span>
               <b>설치됨</b>
               {provider.version ? ` · 버전 ${provider.version}` : null}
+            </span>
+          </div>
+        ) : bodyInstall?.status === "installing" ? (
+          <div className="flex items-center gap-2">
+            <span className="inline-block animate-spin font-semibold text-[var(--accent)]">⟳</span>
+            <span>
+              <b>설치 중…</b>
+              <span className="ml-1 text-[var(--text-muted)]">(1~3분)</span>
+            </span>
+          </div>
+        ) : bodyInstall?.status === "failed" ? (
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-[var(--danger)]">!</span>
+            <span>
+              <b>자동 설치 실패</b>
+              <span className="ml-1 text-[var(--text-muted)]">— 아래 명령으로 직접 설치해 주세요</span>
             </span>
           </div>
         ) : (
@@ -307,23 +357,33 @@ function ProviderCard({
             />
             이걸로 사용
           </label>
+        ) : !installed && bodyInstall?.status === "installing" ? (
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-[13px] font-medium text-[var(--text-muted)]">
+            <span className="inline-block animate-spin">⟳</span> 설치 중…
+          </span>
         ) : !installed ? (
-          <a
-            className="inline-flex items-center gap-1 text-[13px] font-semibold text-[var(--accent)]"
-            href={provider.installDocsUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
-            설치하는 법 보기 →
-          </a>
-        ) : skill && (skill.status === "missing" || skill.status === "failed") ? (
           <button
             type="button"
-            onClick={onInstallSkill}
+            onClick={onInstallBody}
             className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--accent)] bg-[var(--accent)] px-3 py-2 text-[13px] font-semibold text-white hover:opacity-90"
           >
-            ⚡ 자동 설치
+            {bodyInstall?.status === "failed" ? "⚡ 다시 시도" : "⚡ 자동 설치"}
           </button>
+        ) : skill && (skill.status === "missing" || skill.status === "failed") ? (
+          <div className="flex flex-col gap-1.5">
+            <button
+              type="button"
+              onClick={onInstallSkill}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--accent)] bg-[var(--accent)] px-3 py-2 text-[13px] font-semibold text-white hover:opacity-90"
+            >
+              ⚡ 자동 설치
+            </button>
+            {provider.id === "claude-code" ? (
+              <span className="text-[11.5px] text-[var(--text-muted)]">
+                처음이면 터미널에서 <code className="rounded bg-[var(--surface-2)] px-1 py-[1px] font-mono text-[11px]">claude</code> 한 번 실행해서 로그인 후
+              </span>
+            ) : null}
+          </div>
         ) : skill?.status === "installing" ? (
           <span className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-[13px] font-medium text-[var(--text-muted)]">
             <span className="inline-block animate-spin">⟳</span> 설치 중…
@@ -331,16 +391,23 @@ function ProviderCard({
         ) : null}
       </div>
 
-      {/* 설치 안내 — provider 자체 미설치 시 */}
-      {!installed ? (
-        <div className="mt-1 rounded-[10px] border border-[var(--border)] bg-[var(--surface-2)] px-4 py-3.5 font-mono text-[12.5px] text-[var(--text)]">
-          # 터미널에서 한 줄 실행
-          <br />
-          {provider.installCommand}
-          <br />
-          <br />
-          설치가 끝나면 “상태 다시 확인” 을 눌러주세요.
-        </div>
+      {/* 본체 설치 실패 시 — 사용자가 직접 터미널에서 설치할 수 있는 명령 안내 */}
+      {!installed && bodyInstall?.status === "failed" ? (
+        <>
+          <div className="mt-1 rounded-[10px] border border-[var(--border)] bg-[var(--surface-2)] px-4 py-3.5 font-mono text-[12.5px] text-[var(--text)]">
+            # 터미널에서 한 줄 실행
+            <br />
+            {provider.installCommand}
+            <br />
+            <br />
+            설치가 끝나면 “상태 다시 확인” 을 눌러주세요.
+          </div>
+          {bodyInstall.error ? (
+            <div className="mt-1 rounded-[10px] border border-[rgba(239,68,68,0.25)] bg-[var(--danger-soft)] px-3.5 py-2.5 font-mono text-[11.5px] text-[#991b1b]">
+              {bodyInstall.error}
+            </div>
+          ) : null}
+        </>
       ) : null}
 
       {/* skill 설치 실패 에러 자세히 */}

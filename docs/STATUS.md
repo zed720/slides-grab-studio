@@ -154,6 +154,14 @@ slides-grab figma   --slides-dir output --output <name>-figma.pptx              
 - 2026-05-18: 1차 패키징 (배포 준비) — 비개발자 대상. README 한국어 완전 재작성 ((Ⅲ) 완전 초보 친화: Node.js/pnpm/Claude Code 설치 step-by-step, FAQ, 알려진 한계). `start.command` macOS 더블클릭 런처 (cd + 첫 실행이면 자동 bootstrap + pnpm dev + 3초 뒤 브라우저 자동 open). `samples/` 폴더에 예시 brief 2개. **clean test 환경 검증 두 번**:
   - 1차 시도: `scripts.setup` 이름이 pnpm built-in `pnpm setup` (shell 환경 초기화) 과 충돌 → `pnpm install` 안 호출됨 → `next` 모듈 못 찾아서 dev 실패. `scripts.setup` → `scripts.bootstrap` 으로 rename + start.command 가 명령 직접 호출 (`pnpm install && pnpm exec playwright install chromium`) 으로 변경.
   - 2차 시도: `pnpm exec playwright` 가 transitive dep 못 찾아서 실패 (`Command "playwright" not found`). `playwright` 를 우리 직접 devDependency 로 추가 (`pnpm add -D playwright`). 이제 clean 환경 (~/Desktop/test-clean) 에서 `bash start.command` → install 2.7s (cached) → `🚀 서버 시작!` → `Ready in 230ms` → `/`, `/start`, `/api/providers` 모두 HTTP 200 정상.
+- 2026-05-20: 비개발자 셋업 friction 축소 (A → B 순).
+  - **A. provider 본체 ⚡ 자동 설치** — `lib/providers/install-body.ts` (Claude Code / Codex 본체 `npm install -g` spawn), API `app/api/providers/install/route.ts`, ProviderStatus 에 `bodyInstall` 필드, 화면 1 의 "설치 안 됨" 분기에 ⚡ 자동 설치 버튼. 실패 시 (EACCES 등) 카드 안 터미널 명령 fallback. polling effect 가 bodyInstall.installing 도 따라가도록 갱신.
+  - **A. Claude 로그인 안내** — skills.ts 의 spawn close handler 가 stderr 의 auth 키워드 (`not authenticated`, `please run claude`, `/login`, `invalid api key` 등) 감지 시 "Claude 로그인이 안 되어 있어요. 터미널에서 `claude` 한 번 실행해 로그인한 뒤 다시 시도해 주세요." 로 메시지 변환. Claude Code 카드의 skill missing 분기에 "처음이면 터미널에서 `claude` 한 번 실행" 안내.
+  - **A. pnpm 자동 설치** — `start.command` 가 pnpm 없으면 `npm install -g pnpm` 직접 spawn (실패 시 sudo 안내 fallback). Node.js 만 사용자가 직접 설치하면 끝.
+  - **A. README 1-② 단순화** — "터미널 명령 4개" 섹션 제거. Node.js 설치만 사용자 작업, 나머지 (pnpm / Claude Code / Codex / slides-grab 기술) 는 모두 자동. 한 줄 흐름과 시간 정리표도 갱신 (10~20분).
+  - **B. `Slides-Grab Studio.app` bundle** — Info.plist + `Contents/MacOS/SlidesGrabStudio` shell launcher. `.app` 더블클릭 → Terminal 에 `start.command` 띄움. macOS LaunchServices 가 `com.apple.application-bundle` 로 인식. start.command 는 호환성 위해 그대로 유지 (.app 이 내부 호출).
+  - **B. README 매일 사용 흐름** — `start.command` 우클릭→열기 → `Slides-Grab Studio.app` 더블클릭으로. Dock 끌어다 두기 가능. 알려진 한계에 ".app 미서명 (Gatekeeper 첫 confirm 필요)" 한 줄 추가.
+  - 결과: 비개발자 사용자가 터미널에 직접 칠 명령은 (a) 없거나 (b) Claude 첫 로그인 (`claude`) 한 줄만. 셋업 시간 20~35분 → 10~20분.
 - 2026-05-20: 검토 후 안전성·UX 보강 (13개 항목, typecheck/lint 0 에러 도달).
   - **업로드 검증** — `app/api/uploads/route.ts` 에 파일당 50MB / 한 요청 200MB 상한 + 확장자 화이트리스트 (`.md/.txt/.pdf/.docx/.pptx`). `app/upload/page.tsx` dropzone 에 클라이언트 사전 검증 + 한 파일 한도 안내.
   - **서버 부팅 cleanup** — `lib/db/index.ts` 의 `getDb()` 가 첫 호출 시 `status IN ('generating', 'outlining')` deck 들을 `failed` 로 정리. dev server crash 후 박제되던 deck 자동 해제 (사용자가 다시 시도 가능).

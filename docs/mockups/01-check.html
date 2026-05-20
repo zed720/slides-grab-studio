@@ -99,8 +99,8 @@
         </div>
       </div>
 
-      <!-- Codex: 설치 안 됨 -->
-      <div class="tool-card not-installed show-help">
+      <!-- Codex: 설치 안 됨 → ⚡ 자동 설치 버튼 (실패 시 터미널 명령 fallback) -->
+      <div class="tool-card not-installed">
         <div class="tool-head">
           <div class="tool-name">
             <span class="tool-icon codex">X</span>
@@ -112,20 +112,19 @@
             <span class="bad">✗</span>
             <span><b>설치 안 됨</b></span>
           </div>
-          <div class="status-line" style="color:var(--text-muted)">
-            <span style="opacity:.3">○</span>
-            <span>로그인 정보 확인 불가</span>
-          </div>
         </div>
         <div class="tool-actions">
-          <a class="install-help" href="#">설치하는 법 보기 →</a>
+          <button class="install-skill-btn">⚡ 자동 설치</button>
         </div>
+        <!-- 자동 설치 실패 시에만 노출됨 (mockup 은 default hidden, 실제 코드는 bodyInstall.status === 'failed' 시) -->
+        <!--
         <div class="install-block">
           # 터미널에서 한 줄 실행<br />
           npm install -g @openai/codex<br />
           <br />
-          설치가 끝나면 이 페이지를 새로고침해 주세요.
+          설치가 끝나면 “상태 다시 확인” 을 눌러주세요.
         </div>
+        -->
       </div>
     </div>
 
