@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { TopNav } from "@/components/TopNav";
 import type { ProviderId, ProviderStatus } from "@/lib/providers";
 
@@ -21,6 +22,23 @@ const ICON_BG: Record<ProviderId, string> = {
 };
 
 export default function CheckPage() {
+  return (
+    <Suspense
+      fallback={
+        <>
+          <TopNav active={1} />
+          <main className="mx-auto max-w-[920px] px-6 pt-14 pb-20" />
+        </>
+      }
+    >
+      <CheckInner />
+    </Suspense>
+  );
+}
+
+function CheckInner() {
+  const searchParams = useSearchParams();
+  const sample = searchParams.get("sample") ?? "";
   const [state, setState] = useState<FetchState>({ kind: "loading" });
   const [selectedId, setSelectedId] = useState<ProviderId | null>(null);
 
@@ -204,7 +222,11 @@ export default function CheckPage() {
           </button>
           {selectedId ? (
             <Link
-              href={`/upload?provider=${selectedId}`}
+              href={(() => {
+                const qs = new URLSearchParams({ provider: selectedId });
+                if (sample) qs.set("sample", sample);
+                return `/upload?${qs.toString()}`;
+              })()}
               className="inline-flex items-center gap-2 rounded-[12px] border border-[var(--primary)] bg-[var(--primary)] px-7 py-4 text-[16px] font-semibold text-[var(--primary-foreground)] no-underline transition-colors hover:bg-[var(--primary-hover)] hover:no-underline"
             >
               다음으로 →

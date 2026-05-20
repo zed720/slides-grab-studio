@@ -90,7 +90,7 @@ export default function LibraryPage() {
         ) : state.kind === "error" ? (
           <ErrorBox message={state.message} />
         ) : state.decks.length === 0 ? (
-          <EmptyState />
+          <WelcomeScreen />
         ) : (
           <>
             <div
@@ -276,21 +276,97 @@ function LoadingGrid() {
   );
 }
 
-function EmptyState() {
+function WelcomeScreen() {
   return (
-    <div className="flex flex-col items-center gap-6 rounded-[16px] border border-[var(--border)] bg-[var(--surface)] py-20 text-center">
-      <div className="text-[15px] font-semibold">
-        아직 만든 발표 자료가 없어요
+    <div className="mx-auto max-w-[880px] px-2 pt-6 pb-20">
+      {/* hero */}
+      <div className="px-6 pt-12 pb-8 text-center">
+        <div className="mb-4 text-[56px] leading-none">🎬</div>
+        <h2 className="m-0 mb-3 text-[32px] font-bold tracking-[-0.02em]">
+          환영합니다
+        </h2>
+        <p className="m-0 text-[16px] leading-[1.55] text-[var(--text-muted)]">
+          제목과 내용만 알려주시면 AI 가 발표 자료를 만들어 드려요.
+          <br />
+          모든 데이터는 이 노트북 안에서만 처리돼요.
+        </p>
       </div>
-      <div className="text-[13.5px] text-[var(--text-muted)]">
-        오른쪽 버튼을 눌러 첫 발표를 만들어 봐요.
+
+      {/* 3 단계 */}
+      <div className="my-9 grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+        <Step
+          n={1}
+          title="내용 올리기"
+          desc="제목 + 텍스트 (또는 .md/.pdf/.docx 파일) 만 있으면 충분해요."
+        />
+        <Step
+          n={2}
+          title="디자인 고르기"
+          desc="35종 디자인 카드 중 분위기에 맞는 걸 클릭."
+        />
+        <Step
+          n={3}
+          title="슬라이드 받기"
+          desc="AI 가 5~15분간 만든 슬라이드. PDF / PPTX 로 다운로드."
+        />
       </div>
-      <Link
-        href="/start"
-        className="inline-flex items-center gap-2 rounded-[12px] border border-[var(--primary)] bg-[var(--primary)] px-7 py-4 text-[16px] font-semibold text-[var(--primary-foreground)] no-underline hover:bg-[var(--primary-hover)] hover:no-underline"
-      >
-        + 새 발표 자료 만들기
-      </Link>
+
+      {/* 샘플 빠른 시작 */}
+      <div className="mb-7 flex flex-wrap items-center gap-3.5 rounded-[14px] border border-[var(--border)] bg-[var(--surface-2)] px-5 py-4">
+        <span className="flex-shrink-0 text-[22px]">💡</span>
+        <span className="flex-1 min-w-[200px] text-[13.5px]">
+          <b className="font-bold">처음이라 막막하시면</b> — 미리 준비된 샘플로 한 번 만들어 보세요.
+        </span>
+        <span className="flex flex-shrink-0 gap-2">
+          <Link
+            href="/start?sample=team-retro"
+            className="inline-flex items-center gap-1.5 rounded-[10px] border-[1.5px] border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[12.5px] font-semibold text-[var(--text)] no-underline hover:border-[var(--primary)] hover:bg-[var(--surface-2)] hover:no-underline"
+          >
+            📄 팀 회고 샘플
+          </Link>
+          <Link
+            href="/start?sample=onboarding"
+            className="inline-flex items-center gap-1.5 rounded-[10px] border-[1.5px] border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[12.5px] font-semibold text-[var(--text)] no-underline hover:border-[var(--primary)] hover:bg-[var(--surface-2)] hover:no-underline"
+          >
+            📄 신입 온보딩 샘플
+          </Link>
+        </span>
+      </div>
+
+      {/* 큰 CTA */}
+      <div className="flex justify-center">
+        <Link
+          href="/start"
+          className="inline-flex items-center gap-2.5 rounded-[14px] bg-[var(--primary)] px-9 py-4 text-[17px] font-bold tracking-[-0.005em] text-[var(--primary-foreground)] no-underline hover:bg-[var(--primary-hover)] hover:no-underline"
+        >
+          + 첫 발표 자료 만들기
+        </Link>
+      </div>
+
+      {/* footer */}
+      <div className="mt-14 flex flex-wrap justify-center gap-7 border-t border-[var(--border)] pt-6 text-[12.5px] text-[var(--text-muted)]">
+        <span>
+          📂 만든 자료는 앱 폴더 안{" "}
+          <code className="rounded bg-[var(--surface-2)] px-1.5 py-0.5 text-[11.5px]">
+            data/decks
+          </code>{" "}
+          에 저장돼요.
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function Step({ n, title, desc }: { n: number; title: string; desc: string }) {
+  return (
+    <div className="flex flex-col gap-2 rounded-[14px] border-[1.5px] border-[var(--border)] bg-[var(--surface)] px-[18px] py-[22px]">
+      <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-[var(--accent-soft)] px-2.5 py-[3px] text-[11.5px] font-bold tracking-[0.02em] text-[var(--accent)]">
+        {n}
+      </span>
+      <span className="text-[15px] font-bold tracking-[-0.005em]">{title}</span>
+      <span className="text-[12.5px] leading-[1.5] text-[var(--text-muted)]">
+        {desc}
+      </span>
     </div>
   );
 }

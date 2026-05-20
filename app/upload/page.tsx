@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { TopNav } from "@/components/TopNav";
 
 const SLIDE_COUNT_OPTIONS = [
@@ -47,6 +47,7 @@ function UploadInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const providerId = searchParams.get("provider") ?? "";
+  const sample = searchParams.get("sample") ?? "";
 
   const [title, setTitle] = useState("");
   const [mode, setMode] = useState<"text" | "file">("text");
@@ -56,7 +57,34 @@ function UploadInner() {
   const [tone, setTone] = useState("진지하게");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [samplePrefilled, setSamplePrefilled] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // sample query 로 진입한 경우 — 환영 화면의 "샘플 빠른 시작" 흐름.
+  // mount 시 한 번만 fetch 후 폼 자동 채움. 사용자는 그대로 다음으로 가도 되고
+  // 본문을 자유롭게 수정해도 OK.
+  useEffect(() => {
+    if (!sample) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(`/api/samples/${encodeURIComponent(sample)}`, {
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as { title?: string; content?: string };
+        if (cancelled) return;
+        if (data.title) setTitle(data.title);
+        if (data.content) setText(data.content);
+        setSamplePrefilled(true);
+      } catch {
+        // 실패해도 빈 폼으로 그대로 진행
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [sample]);
 
   const addFiles = (incoming: FileList | File[]) => {
     const list = Array.from(incoming);
@@ -148,6 +176,15 @@ function UploadInner() {
           제목과 발표에 담길 내용만 알려주시면, 나머지는 AI 가 정리해서 슬라이드를 만들어요.
         </p>
       </div>
+
+      {samplePrefilled ? (
+        <div className="mb-5 flex items-center gap-2.5 rounded-[10px] border border-[#dbeafe] bg-[var(--accent-soft)] px-4 py-3 text-[13px]">
+          <span>📄</span>
+          <span>
+            <b className="font-bold">샘플로 시작했어요.</b> 그대로 다음 단계로 가셔도 되고, 본문을 자유롭게 수정하셔도 돼요.
+          </span>
+        </div>
+      ) : null}
 
       <div className="rounded-[16px] border border-[var(--border)] bg-[var(--surface)] p-7 shadow-[var(--shadow-sm)]">
         {/* 제목 */}

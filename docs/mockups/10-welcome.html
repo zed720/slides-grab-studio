@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>환영합니다 · Slides-Grab Web Studio</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* 환영 화면 — 라이브러리 EmptyState 자리에 deck 0 개일 때만 노출.
+       사용자가 첫 deck 을 만들고 나면 자연스럽게 사라지고 카드 그리드로. */
+
+    .welcome-wrap {
+      max-width: 880px;
+      margin: 40px auto 0;
+      padding: 0 24px 80px;
+    }
+
+    /* hero */
+    .hero {
+      text-align: center;
+      padding: 48px 24px 32px;
+    }
+    .hero-emoji {
+      font-size: 56px;
+      line-height: 1;
+      margin-bottom: 18px;
+    }
+    .hero h1 {
+      margin: 0 0 12px;
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .hero p {
+      margin: 0;
+      font-size: 16px;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    /* 3 단계 카드 */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin: 36px 0 28px;
+    }
+    .step {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 22px 18px;
+      border-radius: 14px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      text-align: left;
+    }
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      width: fit-content;
+      padding: 3px 10px 3px 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .step-title { font-size: 15px; font-weight: 700; letter-spacing: -0.005em; }
+    .step-desc { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; }
+
+    /* 샘플 빠른 시작 — 더 위에 둠 (첫 시도 사용자에게 가장 가까운 안내) */
+    .quickstart {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 20px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      margin-bottom: 28px;
+    }
+    .quickstart-icon {
+      flex-shrink: 0;
+      font-size: 22px;
+    }
+    .quickstart-text {
+      flex: 1;
+      font-size: 13.5px;
+      color: var(--text);
+    }
+    .quickstart-text b { font-weight: 700; }
+    .quickstart-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .sample-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .sample-btn:hover {
+      border-color: var(--primary);
+      background: var(--surface-2);
+    }
+
+    /* 큰 시작 버튼 */
+    .start-cta {
+      display: flex;
+      justify-content: center;
+      margin-top: 4px;
+    }
+    .start-cta a {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 36px;
+      border-radius: 14px;
+      background: var(--primary);
+      color: var(--primary-foreground);
+      font-size: 17px;
+      font-weight: 700;
+      text-decoration: none;
+      letter-spacing: -0.005em;
+      transition: background 0.12s ease;
+    }
+    .start-cta a:hover {
+      background: var(--primary-hover);
+      text-decoration: none;
+    }
+
+    /* 아래쪽 보조 안내 — 데이터 보관 위치, 도움말 등 */
+    .welcome-footer {
+      margin-top: 56px;
+      padding-top: 22px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: center;
+      gap: 28px;
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+    .welcome-footer a {
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+    .welcome-footer a:hover { color: var(--text); text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <!-- TopNav: 일반 라이브러리와 동일하게 평소처럼 보임. 환영 페이지는 main 안 내용만 다름. -->
+  <nav class="topnav">
+    <div class="topnav-inner">
+      <a class="brand" href="#">
+        <img src="../../public/bitree-logo.png" alt="" />
+        <span>Slides-Grab Web Studio</span>
+      </a>
+      <div class="topnav-right">
+        <a class="topnav-link active" href="#">내 발표 자료</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="welcome-wrap">
+
+    <div class="hero">
+      <div class="hero-emoji">🎬</div>
+      <h1>환영합니다</h1>
+      <p>
+        제목과 내용만 알려주시면 AI 가 발표 자료를 만들어 드려요.<br />
+        모든 데이터는 이 노트북 안에서만 처리돼요.
+      </p>
+    </div>
+
+    <!-- 3 단계 -->
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">1</span>
+        <span class="step-title">내용 올리기</span>
+        <span class="step-desc">제목 + 텍스트 (또는 .md/.pdf/.docx 파일) 만 있으면 충분해요.</span>
+      </div>
+      <div class="step">
+        <span class="step-num">2</span>
+        <span class="step-title">디자인 고르기</span>
+        <span class="step-desc">35종 디자인 카드 중 분위기에 맞는 걸 클릭.</span>
+      </div>
+      <div class="step">
+        <span class="step-num">3</span>
+        <span class="step-title">슬라이드 받기</span>
+        <span class="step-desc">AI 가 5~15분간 만든 슬라이드. PDF / PPTX 로 다운로드.</span>
+      </div>
+    </div>
+
+    <!-- 샘플 빠른 시작 -->
+    <div class="quickstart">
+      <span class="quickstart-icon">💡</span>
+      <span class="quickstart-text">
+        <b>처음이라 막막하시면</b> — 미리 준비된 샘플로 한 번 만들어 보세요.
+      </span>
+      <span class="quickstart-actions">
+        <button type="button" class="sample-btn">📄 팀 회고 샘플</button>
+        <button type="button" class="sample-btn">📄 신입 온보딩 샘플</button>
+      </span>
+    </div>
+
+    <!-- 큰 시작 버튼 -->
+    <div class="start-cta">
+      <a href="#">+ 첫 발표 자료 만들기</a>
+    </div>
+
+    <!-- 보조 안내 -->
+    <div class="welcome-footer">
+      <span>📂 만든 자료는 <code style="font-size:11.5px">data/decks/</code> 에 저장</span>
+      <a href="#">자세히 — README 보기</a>
+    </div>
+
+  </main>
+
+</body>
+</html>
