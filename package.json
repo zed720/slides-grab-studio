@@ -1,0 +1,40 @@
+{
+  "name": "slides-grab-web-studio",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "bootstrap": "pnpm install && pnpm exec playwright install chromium",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.10.0",
+    "next": "16.2.6",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "slides-grab": "1.2.6"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.6",
+    "playwright": "^1.60.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3"
+    ],
+    "patchedDependencies": {
+      "slides-grab@1.2.6": "patches/slides-grab@1.2.6.patch"
+    }
+  }
+}

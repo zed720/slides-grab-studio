@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>2단계 · 발표 내용 올리기 — Slides-Grab Web Studio</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+    .input-mode {
+      display: none;
+    }
+    .input-mode.active {
+      display: block;
+    }
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .chip {
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      font-size: 13.5px;
+      cursor: pointer;
+      color: var(--text);
+      user-select: none;
+      transition: all 0.12s ease;
+    }
+    .chip:hover { border-color: var(--border-strong); }
+    .chip.selected {
+      background: var(--primary);
+      color: var(--primary-foreground);
+      border-color: var(--primary);
+    }
+    .file-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 13.5px;
+    }
+    .file-item .name { flex: 1; font-weight: 500; }
+    .file-item .size { color: var(--text-muted); font-size: 12px; }
+    .file-item .x { color: var(--text-muted); cursor: pointer; padding: 4px; }
+    .file-item .file-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 10.5px;
+    }
+  </style>
+</head>
+<body>
+  <header class="topnav">
+    <div class="topnav-inner">
+      <a href="index.html" class="brand" style="text-decoration:none;color:inherit">
+        <span class="dot"></span> Slides-Grab Web Studio
+      </a>
+      <div class="crumbs">
+        <a href="01-check.html" class="step done" style="text-decoration:none">✓ AI 연결</a>
+        <span class="sep">›</span>
+        <span class="step active">2 · 내용 올리기</span>
+        <span class="sep">›</span>
+        <span class="step">3 · 디자인 고르기</span>
+        <span class="sep">›</span>
+        <span class="step">4 · 슬라이드 보기</span>
+      </div>
+      <div class="ai-pill"><span class="pulse"></span> Claude Code 연결됨</div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="hero">
+      <h1>어떤 내용으로 발표를 만들까요?</h1>
+      <p class="lead">제목과 발표에 담길 내용만 알려주시면, 나머지는 AI가 정리해서 슬라이드를 만들어요.</p>
+    </div>
+
+    <div class="card card-pad">
+      <div class="field">
+        <label for="title">발표 제목 <span style="color:var(--danger)">*</span></label>
+        <input id="title" type="text" placeholder="예: 2026년 상반기 사업 계획" />
+        <span class="hint">완성된 슬라이드의 첫 페이지에 들어가요.</span>
+      </div>
+
+      <div class="field">
+        <label>내용 올리기 <span style="color:var(--danger)">*</span></label>
+        <div class="tabs" role="tablist">
+          <div class="tab active" onclick="switchMode('text', this)">텍스트로 붙여넣기</div>
+          <div class="tab" onclick="switchMode('file', this)">파일로 올리기</div>
+        </div>
+
+        <div id="mode-text" class="input-mode active">
+          <textarea
+            rows="8"
+            placeholder="발표에 담길 내용을 자유롭게 적어주세요. 메모나 문서를 그대로 붙여넣어도 좋아요. 길이에 상관없이 AI가 알아서 정리합니다."
+          ></textarea>
+          <span class="hint">예시: 회의록, 보고서 초안, 핵심 메시지 메모 등</span>
+        </div>
+
+        <div id="mode-file" class="input-mode">
+          <div class="dropzone">
+            <div class="icon">⬆</div>
+            <div class="main">파일을 여기에 끌어다 놓으세요</div>
+            <div class="sub">.txt · .md · .pdf · .docx · .pptx 가능 (여러 개 한꺼번에 OK)</div>
+            <div class="dropzone-actions">
+              <button class="btn btn-ghost">파일 고르기</button>
+            </div>
+          </div>
+          <div class="file-list">
+            <div class="file-item">
+              <span class="file-icon">PDF</span>
+              <span class="name">2026_상반기_사업계획_초안.pdf</span>
+              <span class="size">412 KB</span>
+              <span class="x">✕</span>
+            </div>
+            <div class="file-item">
+              <span class="file-icon">MD</span>
+              <span class="name">팀_회의록_2026-05.md</span>
+              <span class="size">28 KB</span>
+              <span class="x">✕</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>몇 장 정도로 만들까요?</label>
+        <div class="chip-row">
+          <div class="chip">5장 안팎</div>
+          <div class="chip selected">10장 안팎</div>
+          <div class="chip">15장 안팎</div>
+          <div class="chip">20장 이상</div>
+          <div class="chip">AI가 알아서</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>분위기는 어떻게? <span style="color:var(--text-muted);font-weight:400">(선택)</span></label>
+        <div class="chip-row">
+          <div class="chip selected">진지하게</div>
+          <div class="chip">친근하게</div>
+          <div class="chip">트렌디하게</div>
+          <div class="chip">격식있게</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <a href="01-check.html" class="btn btn-ghost left">← 이전</a>
+      <a href="03-template.html" class="btn btn-lg">디자인 고르러 가기 →</a>
+    </div>
+  </main>
+
+  <script>
+    function switchMode(mode, tab) {
+      document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
+      document.querySelectorAll(".input-mode").forEach((m) => m.classList.remove("active"));
+      document.getElementById("mode-" + mode).classList.add("active");
+    }
+    document.querySelectorAll(".chip-row").forEach((row) => {
+      row.addEventListener("click", (e) => {
+        if (!e.target.classList.contains("chip")) return;
+        row.querySelectorAll(".chip").forEach((c) => c.classList.remove("selected"));
+        e.target.classList.add("selected");
+      });
+    });
+  </script>
+</body>
+</html>

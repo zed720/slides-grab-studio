@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>1단계 · AI 도구 설치 확인 — Slides-Grab Web Studio</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .why {
+      margin: 16px 0 32px;
+      padding: 14px 18px;
+      background: var(--surface);
+      border-left: 3px solid var(--primary);
+      border-radius: 0 10px 10px 0;
+      font-size: 13.5px;
+      color: var(--text-muted);
+    }
+    .install-block {
+      margin-top: 14px;
+      padding: 14px 16px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12.5px;
+      color: var(--text);
+      display: none;
+    }
+    .tool-card.show-help .install-block { display: block; }
+    .selected-banner {
+      margin-top: 8px;
+      padding: 12px 16px;
+      background: var(--success-soft);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: 10px;
+      color: var(--success);
+      font-size: 13.5px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header class="topnav">
+    <div class="topnav-inner">
+      <a href="index.html" class="brand" style="text-decoration:none;color:inherit">
+        <span class="dot"></span> Slides-Grab Web Studio
+      </a>
+      <div class="crumbs">
+        <span class="step active">1 · AI 연결</span>
+        <span class="sep">›</span>
+        <span class="step">2 · 내용 올리기</span>
+        <span class="sep">›</span>
+        <span class="step">3 · 디자인 고르기</span>
+        <span class="sep">›</span>
+        <span class="step">4 · 슬라이드 보기</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="hero">
+      <h1>먼저 AI 도구가 설치되어 있는지 확인할게요</h1>
+      <p class="lead">
+        슬라이드는 AI가 만들어줍니다. 아래 둘 중 <b>한 개라도 잘 연결</b>되어 있으면 시작할 수 있어요.
+      </p>
+    </div>
+
+    <div class="why">
+      Claude Code 또는 Codex는 사용자 컴퓨터에 직접 설치되는 도구예요. 처음이라면 안내 링크를 눌러 설치 후 이 페이지를 새로고침해 주세요.
+    </div>
+
+    <div class="tool-grid">
+      <!-- Claude Code: 정상 -->
+      <div class="tool-card selected installed">
+        <div class="tool-head">
+          <div class="tool-name">
+            <span class="tool-icon">C</span>
+            Claude Code
+          </div>
+        </div>
+        <div class="status-row">
+          <div class="status-line">
+            <span class="ok">✓</span>
+            <span><b>설치됨</b> · 버전 1.0.42</span>
+          </div>
+          <div class="status-line">
+            <span class="ok">✓</span>
+            <span><b>로그인됨</b> · wnsdlf@kakao.com</span>
+          </div>
+        </div>
+        <div class="tool-actions">
+          <label class="choose-radio checked">
+            <input type="radio" name="provider" checked />
+            이걸로 사용
+          </label>
+        </div>
+      </div>
+
+      <!-- Codex: 설치 안 됨 -->
+      <div class="tool-card not-installed show-help">
+        <div class="tool-head">
+          <div class="tool-name">
+            <span class="tool-icon codex">X</span>
+            Codex
+          </div>
+        </div>
+        <div class="status-row">
+          <div class="status-line">
+            <span class="bad">✗</span>
+            <span><b>설치 안 됨</b></span>
+          </div>
+          <div class="status-line" style="color:var(--text-muted)">
+            <span style="opacity:.3">○</span>
+            <span>로그인 정보 확인 불가</span>
+          </div>
+        </div>
+        <div class="tool-actions">
+          <a class="install-help" href="#">설치하는 법 보기 →</a>
+        </div>
+        <div class="install-block">
+          # 터미널에서 한 줄 실행<br />
+          npm install -g @openai/codex<br />
+          <br />
+          설치가 끝나면 이 페이지를 새로고침해 주세요.
+        </div>
+      </div>
+    </div>
+
+    <div class="selected-banner">
+      <span>✓</span>
+      <span>Claude Code로 슬라이드를 만들 거예요. 다음 단계로 넘어갈 수 있어요.</span>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-ghost btn" onclick="location.reload()">상태 다시 확인</button>
+      <a href="02-upload.html" class="btn btn-lg">다음으로 →</a>
+    </div>
+  </main>
+</body>
+</html>

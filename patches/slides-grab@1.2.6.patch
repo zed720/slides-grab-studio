@@ -1,0 +1,70 @@
+diff --git a/src/editor/js/editor-select.js b/src/editor/js/editor-select.js
+--- a/src/editor/js/editor-select.js
++++ b/src/editor/js/editor-select.js
+@@ -15,6 +15,7 @@ import {
+   normalizeHexColor, parsePixelValue, isBoldFontWeight,
+ } from './editor-utils.js';
+ import { renderBboxes, scaleSlide, clientToSlidePoint, getXPath } from './editor-bbox.js';
++import { scheduleDirectSave } from './editor-direct-edit.js';
+ 
+ function isElementNode(node) {
+   return Boolean(node) && node.nodeType === Node.ELEMENT_NODE;
+@@ -61,7 +62,21 @@ export function getSelectableTargetAt(clientX, clientY) {
+   if (!doc) return null;
+ 
+   const point = clientToSlidePoint(clientX, clientY);
+-  let node = doc.elementFromPoint(point.x, point.y);
++  const hit = doc.elementFromPoint(point.x, point.y);
++
++  // bitreespark patch: inner <span>/<strong>/<em> 등 inline 안에서 클릭해도
++  // 텍스트 편집 가능한 부모(h1/p/li) 까지 자동으로 올라간다.
++  // 텍스트 편집은 contentEditable 인라인 편집 (setSelectedObjectXPath 안의 hook)
++  // 으로 처리되어 inline 자식 구조(색깔/굵기)가 보존된다.
++  let cursor = hit;
++  while (cursor) {
++    if (isTextEditableElement(cursor)) {
++      return cursor;
++    }
++    cursor = cursor.parentElement;
++  }
++
++  let node = hit;
+   while (node && !isSelectableElement(node)) {
+     node = node.parentElement;
+   }
+@@ -242,6 +257,18 @@ export function setSelectedObjectXPath(xpath, statusMessage = 'Object selected.'
+   const slide = currentSlideFile();
+   if (!slide) return;
+   const ss = getSlideState(slide);
++
++  // bitreespark patch: 이전 selected element 의 contentEditable 해제 + save 트리거.
++  // contentEditable 인라인 편집으로 사용자가 슬라이드 안에서 직접 텍스트를 고치고,
++  // selection 이 바뀔 때 (또는 다른 element 클릭 시) 변경이 디스크로 저장된다.
++  const prevEl = getSelectedObjectElement();
++  if (prevEl && prevEl.isContentEditable) {
++    prevEl.removeAttribute('contenteditable');
++    prevEl.removeAttribute('spellcheck');
++    prevEl.style.outline = '';
++    scheduleDirectSave(0, 'Slide text edited.');
++  }
++
+   ss.selectedObjectXPath = xpath || '';
+   state.hoveredObjectXPath = xpath || '';
+   renderObjectSelection();
+@@ -249,6 +276,16 @@ export function setSelectedObjectXPath(xpath, statusMessage = 'Object selected.'
+   if (statusMessage) {
+     setStatus(statusMessage);
+   }
++
++  // bitreespark patch: 새 selected element 가 텍스트 편집 가능하면 contentEditable=true.
++  const newEl = getSelectedObjectElement();
++  if (newEl && isTextEditableElement(newEl)) {
++    newEl.setAttribute('contenteditable', 'true');
++    newEl.setAttribute('spellcheck', 'false');
++    newEl.style.outline = '2px dashed rgba(52, 211, 153, 0.7)';
++    // 다음 tick 에 focus — contentEditable 적용이 끝난 후
++    setTimeout(() => { try { newEl.focus(); } catch {} }, 0);
++  }
+ }
+ 
+ export function updateHoveredObjectFromPointer(clientX, clientY) {

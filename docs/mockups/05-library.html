@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>홈 · 내 발표 자료 — Slides-Grab Web Studio</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* 라이브러리 페이지 — 4 화면 흐름 바깥의 진입점.
+       사용자가 만든 발표 자료 목록 + "+ 새로 만들기" 카드. */
+
+    .lib-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .lib-head h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+      font-weight: 700;
+    }
+    .lib-head .meta {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .lib-head .meta b { color: var(--text); }
+    .refresh-btn {
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .refresh-btn:hover { background: var(--surface-2); }
+
+    /* 카드 그리드 */
+    .lib-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    /* + 새 발표 자료 만들기 카드 */
+    .new-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      aspect-ratio: 5 / 4;
+      padding: 24px;
+      text-align: center;
+      border: 2px dashed var(--border-strong);
+      border-radius: 14px;
+      background: var(--surface-2);
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.15s ease;
+    }
+    .new-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+      background: var(--surface);
+      box-shadow: var(--shadow-md);
+      text-decoration: none;
+    }
+    .new-card .plus {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .new-card:hover .plus {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .new-card .title { font-size: 15px; font-weight: 700; }
+    .new-card .hint { font-size: 12.5px; color: var(--text-muted); }
+
+    /* deck 카드 */
+    .deck-card {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-radius: 14px;
+      border: 2px solid var(--border);
+      background: var(--surface);
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.15s ease;
+    }
+    .deck-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--border-strong);
+      box-shadow: var(--shadow-md);
+      text-decoration: none;
+    }
+    .deck-card .preview {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      background: #fff;
+      overflow: hidden;
+    }
+    .deck-card .status-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .deck-card .status-ready {
+      background: var(--success-soft);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+    .deck-card .status-generating {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid #dbeafe;
+    }
+    .deck-card .status-failed {
+      background: var(--danger-soft);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+    .deck-card .status-draft {
+      background: var(--surface);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .deck-card .meta {
+      border-top: 1px solid var(--border);
+      padding: 14px 16px;
+    }
+    .deck-card .title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .deck-card .submeta {
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+
+    /* 빈 미리보기 (generating / failed / draft 카드) */
+    .preview-empty {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface-2);
+    }
+
+    /* 미니 슬라이드 (mockup 03 의 디자인 재사용) */
+    .preview .ts {
+      width: 100%; height: 100%;
+      padding: 18px 22px;
+      box-sizing: border-box;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .ts-corp { background: #fff; color: #0f172a; }
+    .ts-corp .eb { font-size: 9px; letter-spacing: 0.18em; color: #64748b; text-transform: uppercase; margin-bottom: 8px; font-weight: 600; }
+    .ts-corp h4 { margin: 0 0 6px; font-size: 22px; line-height: 1.15; letter-spacing: -0.01em; font-weight: 700; }
+    .ts-corp .ln { width: 36px; height: 3px; background: #0f172a; margin-top: 8px; }
+    .ts-corp .sub { font-size: 11px; color: #475569; margin-top: 8px; }
+
+    .ts-dark { background: radial-gradient(circle at 70% 30%, #1e293b, #0a0f1e); color: #e2e8f0; }
+    .ts-dark h4 { margin: 0 0 4px; font-size: 22px; font-weight: 800; color: #f1f5f9; letter-spacing: -0.02em; }
+    .ts-dark .acc { color: #34d399; font-weight: 700; }
+    .ts-dark .sub { font-size: 11px; color: #94a3b8; margin-top: 6px; }
+    .ts-dark .chip { display: inline-block; margin-top: 12px; padding: 3px 8px; border-radius: 4px; background: rgba(52, 211, 153, 0.15); color: #34d399; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; }
+
+    .ts-edit { background: #faf6ef; color: #2a2a2a; }
+    .ts-edit .eb { font-size: 9px; letter-spacing: 0.18em; color: #b45309; text-transform: uppercase; margin-bottom: 10px; font-weight: 700; }
+    .ts-edit h4 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 26px; line-height: 1.1; font-weight: 700; }
+    .ts-edit .sub { font-family: Georgia, serif; font-style: italic; font-size: 12px; color: #6b5b3d; margin-top: 10px; }
+    .ts-edit .rule { width: 100%; height: 1px; background: #d6c8a8; margin: 12px 0; }
+
+    /* generating 진행 막대 (mini) */
+    .mini-progress {
+      width: 70%;
+      height: 4px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .mini-progress > span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #60a5fa);
+    }
+    .preview-pending-label {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .preview-pending-label.danger { color: var(--danger); }
+
+    /* 빈 상태 */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 18px;
+      padding: 80px 24px;
+      text-align: center;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--surface);
+    }
+    .empty-state .title { font-size: 15px; font-weight: 600; }
+    .empty-state .hint { font-size: 13.5px; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <header class="topnav">
+    <div class="topnav-inner">
+      <a href="index.html" class="brand" style="text-decoration:none;color:inherit">
+        <span class="dot"></span> Slides-Grab Web Studio
+      </a>
+      <!-- 라이브러리(홈)는 4 단계 흐름 *바깥* 의 진입점이라 breadcrumb 없음 -->
+    </div>
+  </header>
+
+  <main class="container-wide" style="max-width:1600px;padding:32px 32px 80px">
+    <div class="lib-head">
+      <h1>내 발표 자료</h1>
+      <div class="meta">
+        <span>전체 <b>5</b>개</span>
+        <button class="refresh-btn" type="button">새로고침</button>
+      </div>
+    </div>
+
+    <div class="lib-grid">
+      <!-- + 새 발표 자료 만들기 -->
+      <a class="new-card" href="01-check.html">
+        <span class="plus">+</span>
+        <span class="title">새 발표 자료 만들기</span>
+        <span class="hint">제목과 내용만 알려주시면 AI 가 만들어줘요</span>
+      </a>
+
+      <!-- 완성 deck -->
+      <a class="deck-card" href="04-deck.html">
+        <div class="preview">
+          <span class="status-badge status-ready">완성</span>
+          <div class="ts ts-corp">
+            <div class="eb">2026 H1 · INTERNAL</div>
+            <h4>2026년 상반기<br/>사업 계획</h4>
+            <div class="ln"></div>
+            <div class="sub">전략기획팀 · 2026.05.16</div>
+          </div>
+        </div>
+        <div class="meta">
+          <div class="title">2026년 상반기 사업 계획</div>
+          <div class="submeta">10장 · 오늘 14:32</div>
+        </div>
+      </a>
+
+      <!-- 완성 deck 2 -->
+      <a class="deck-card" href="04-deck.html">
+        <div class="preview">
+          <span class="status-badge status-ready">완성</span>
+          <div class="ts ts-dark">
+            <h4><span class="acc">2026</span> Vision</h4>
+            <div class="sub">우리가 만드는 다음 챕터</div>
+            <span class="chip">PRODUCT · INTERNAL</span>
+          </div>
+        </div>
+        <div class="meta">
+          <div class="title">제품 비전 공유</div>
+          <div class="submeta">8장 · 어제</div>
+        </div>
+      </a>
+
+      <!-- 만드는 중 deck -->
+      <a class="deck-card" href="04-deck.html">
+        <div class="preview">
+          <span class="status-badge status-generating">만드는 중</span>
+          <div class="preview-empty">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;padding:0 24px;box-sizing:border-box">
+              <div class="preview-pending-label">3 / 10장 만드는 중…</div>
+              <div class="mini-progress"><span style="width:30%"></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="meta">
+          <div class="title">팀 워크샵 자료</div>
+          <div class="submeta">3 / 10장 · 오늘 15:05</div>
+        </div>
+      </a>
+
+      <!-- 완성 deck 3 -->
+      <a class="deck-card" href="04-deck.html">
+        <div class="preview">
+          <span class="status-badge status-ready">완성</span>
+          <div class="ts ts-edit">
+            <div class="eb">Issue 04 · Spring 2026</div>
+            <h4>The Quiet<br/>Revolution</h4>
+            <div class="rule"></div>
+            <div class="sub">조용한 변화가 만들어낸 큰 차이</div>
+          </div>
+        </div>
+        <div class="meta">
+          <div class="title">디자인 시스템 리뷰</div>
+          <div class="submeta">12장 · 5월 14일</div>
+        </div>
+      </a>
+
+      <!-- 실패한 deck -->
+      <a class="deck-card" href="04-deck.html">
+        <div class="preview">
+          <span class="status-badge status-failed">실패</span>
+          <div class="preview-empty">
+            <div class="preview-pending-label danger">만들기 도중 멈췄어요</div>
+          </div>
+        </div>
+        <div class="meta">
+          <div class="title">분기 회의 발표</div>
+          <div class="submeta">실패 · 5월 12일</div>
+        </div>
+      </a>
+    </div>
+
+    <!-- 빈 상태 예시 (목록 자체가 비어있을 때) -->
+    <details style="margin-top:48px">
+      <summary style="cursor:pointer;font-size:13px;color:var(--text-muted);user-select:none">↓ 빈 상태 디자인 (목록이 비어있을 때)</summary>
+      <div style="margin-top:16px" class="empty-state">
+        <div class="title">아직 만든 발표 자료가 없어요</div>
+        <div class="hint">오른쪽 버튼을 눌러 첫 발표를 만들어 봐요.</div>
+        <a href="01-check.html" class="btn btn-lg">+ 새 발표 자료 만들기</a>
+      </div>
+    </details>
+  </main>
+</body>
+</html>

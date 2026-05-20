@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>3단계 · 디자인 고르기 — Slides-Grab Web Studio</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .tip {
+      margin: 14px 0 4px;
+      padding: 12px 16px;
+      background: var(--accent-soft);
+      border: 1px solid #dbeafe;
+      border-radius: 12px;
+      font-size: 13.5px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .gallery-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 4px;
+    }
+    .count-label {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .count-label b { color: var(--text); }
+
+    /* 모달 안의 큰 슬라이드 - 카드와 동일한 스타일 재활용 */
+    .modal-stage .ts {
+      width: 100%; height: 100%;
+      padding: 60px 80px;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .modal-stage .ts h4 { font-size: 64px !important; line-height: 1.05 !important; }
+    .modal-stage .ts .eb { font-size: 16px !important; margin-bottom: 22px !important; }
+    .modal-stage .ts .sub { font-size: 22px !important; margin-top: 18px !important; }
+    .modal-stage .ts-prod::before { width: 280px !important; height: 280px !important; right:-60px !important; top:-60px !important; }
+    .modal-stage .ts-corp .ln { width: 80px !important; height: 5px !important; margin-top: 16px !important; }
+    .modal-stage .ts-pitch .bigfig { font-size: 96px !important; }
+    .modal-stage .ts-pitch .bars { height: 60px !important; margin-top: 22px !important; }
+    .modal-stage .ts-dark .chip { font-size: 14px !important; padding: 6px 14px !important; margin-top: 28px !important; }
+    .modal-stage .ts-play .badge { font-size: 14px !important; padding: 6px 16px !important; margin-bottom: 18px !important; }
+    .modal-stage .ts-edit .rule { margin: 22px 0 !important; }
+
+    /* 한 줄에 더 많이 — 세로 짧아짐 */
+    .template-grid {
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important;
+      gap: 16px !important;
+    }
+
+    /* sticky bottom action bar — 카드 어디까지 스크롤해도 액션 항상 보임 */
+    .sticky-actions {
+      position: sticky;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      margin: 32px -24px -32px;
+      padding: 14px 24px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: saturate(180%) blur(14px);
+      -webkit-backdrop-filter: saturate(180%) blur(14px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      z-index: 30;
+    }
+    .sticky-actions .selected-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 0;
+    }
+    .sticky-actions .selected-info .mini-thumb {
+      width: 64px;
+      height: 36px;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .sticky-actions .selected-info .mini-thumb .ts {
+      padding: 6px 8px !important;
+    }
+    .sticky-actions .selected-info .mini-thumb .ts h4 {
+      font-size: 6px !important;
+      line-height: 1.1 !important;
+      margin: 0 !important;
+    }
+    .sticky-actions .selected-info .mini-thumb .ts .eb {
+      font-size: 4px !important;
+      margin-bottom: 2px !important;
+    }
+    .sticky-actions .selected-info .mini-thumb .ts .sub,
+    .sticky-actions .selected-info .mini-thumb .ts .ln,
+    .sticky-actions .selected-info .mini-thumb .ts .rule {
+      display: none;
+    }
+    .sticky-actions .selected-info .pick-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sticky-actions .selected-info .pick-label b {
+      color: var(--text);
+      font-weight: 700;
+    }
+    .sticky-actions .empty-hint {
+      flex: 1;
+      font-size: 13px;
+      color: var(--text-soft);
+    }
+  </style>
+</head>
+<body>
+  <header class="topnav">
+    <div class="topnav-inner">
+      <a href="index.html" class="brand" style="text-decoration:none;color:inherit">
+        <span class="dot"></span> Slides-Grab Web Studio
+      </a>
+      <div class="crumbs">
+        <a href="01-check.html" class="step done" style="text-decoration:none">✓ AI 연결</a>
+        <span class="sep">›</span>
+        <a href="02-upload.html" class="step done" style="text-decoration:none">✓ 내용 올리기</a>
+        <span class="sep">›</span>
+        <span class="step active">3 · 디자인 고르기</span>
+        <span class="sep">›</span>
+        <span class="step">4 · 슬라이드 보기</span>
+      </div>
+      <div class="ai-pill"><span class="pulse"></span> Claude Code 연결됨</div>
+    </div>
+  </header>
+
+  <main class="container container-wide" style="max-width:1280px">
+    <div class="hero">
+      <h1>어떤 분위기로 만들까요?</h1>
+      <p class="lead">
+        마음에 드는 디자인을 골라주세요. 카드의 ⛶ 아이콘을 누르면 더 큰 화면에서 자세히 볼 수 있어요.
+      </p>
+    </div>
+
+    <div class="tip">
+      <span>💡</span>
+      <span>아래 디자인들은 <b>slides-grab</b>에서 바로 가져온 진짜 슬라이드 견본이에요. 카드 안에 보이는 작은 슬라이드 그대로 발표 자료가 만들어집니다.</span>
+    </div>
+
+    <div class="gallery-head">
+      <div class="filter-row">
+        <div class="filter-chip active">전체 12종</div>
+        <div class="filter-chip">회사용</div>
+        <div class="filter-chip">제품 발표</div>
+        <div class="filter-chip">투자자</div>
+        <div class="filter-chip">에디토리얼</div>
+        <div class="filter-chip">실험적</div>
+      </div>
+    </div>
+
+    <div class="template-grid">
+      <!-- 1. Corporate Minimal -->
+      <div class="tpl-card selected" onclick="select(this, 'Corporate Minimal')">
+        <div class="tpl-check">✓</div>
+        <div class="tpl-expand" onclick="event.stopPropagation(); openModal('corp', 'Corporate Minimal', '여백 넉넉하고 단정한 회사 보고용')">⛶</div>
+        <div class="tpl-frame">
+          <div class="ts ts-corp">
+            <div class="eb">2026 H1 · INTERNAL</div>
+            <h4>2026년 상반기<br/>사업 계획</h4>
+            <div class="ln"></div>
+            <div class="sub">전략기획팀 · 2026.05.16</div>
+          </div>
+        </div>
+        <div class="tpl-meta">
+          <div class="tpl-name">Corporate Minimal</div>
+          <div class="tpl-desc">여백이 많고 단정한, 회사 보고용에 적합</div>
+          <div class="tpl-tags"><span class="tpl-tag">회사용</span><span class="tpl-tag">보고</span></div>
+        </div>
+      </div>
+
+      <!-- 2. Dark Tech -->
+      <div class="tpl-card" onclick="select(this, 'Dark Tech')">
+        <div class="tpl-check">✓</div>
+        <div class="tpl-expand" onclick="event.stopPropagation(); openModal('dark', 'Dark Tech', '어두운 배경 · 테크/스타트업 톤')">⛶</div>
+        <div class="tpl-frame">
+          <div class="ts ts-dark">
+            <h4><span class="acc">2026</span> Vision</h4>
+            <div class="sub">우리가 만드는 다음 챕터</div>
+            <span class="chip">PRODUCT · INTERNAL</span>
+          </div>
+        </div>
+        <div class="tpl-meta">
+          <div class="tpl-name">Dark Tech</div>
+          <div class="tpl-desc">어두운 배경, 강조 색이 있는 테크 분위기</div>
+          <div class="tpl-tags"><span class="tpl-tag">제품 발표</span><span class="tpl-tag">스타트업</span></div>
+        </div>
+      </div>
+
+      <!-- 3. Editorial -->
+      <div class="tpl-card" onclick="select(this, 'Editorial')">
+        <div class="tpl-check">✓</div>
+        <div class="tpl-expand" onclick="event.stopPropagation(); openModal('edit', 'Editorial', '잡지 느낌 · 본문 위주 콘텐츠')">⛶</div>
+        <div class="tpl-frame">
+          <div class="ts ts-edit">
+            <div class="eb">Issue 04 · Spring 2026</div>
+            <h4>The Quiet<br/>Revolution</h4>
+            <div class="rule"></div>
+            <div class="sub">조용한 변화가 만들어낸 큰 차이</div>
+          </div>
+        </div>
+        <div class="tpl-meta">
+          <div class="tpl-name">Editorial</div>
+          <div class="tpl-desc">잡지 같은 명조 헤드라인, 본문이 많은 글에 어울림</div>
+          <div class="tpl-tags"><span class="tpl-tag">에디토리얼</span><span class="tpl-tag">긴 글</span></div>
+        </div>
+      </div>
+
+      <!-- 4. Product Launch -->
+      <div class="tpl-card" onclick="select(this, 'Product Launch')">
+        <div class="tpl-check">✓</div>
+        <div class="tpl-expand" onclick="event.stopPropagation(); openModal('prod', 'Product Launch', '강렬한 그라데이션 · 신제품 공개')">⛶</div>
+        <div class="tpl-frame">
+          <div class="ts ts-prod">
+            <h4>Hello,<br/>tomorrow.</h4>
+            <div class="sub">신제품 공개 · 곧 만나요</div>
+          </div>
+        </div>
+        <div class="tpl-meta">
+          <div class="tpl-name">Product Launch</div>
+          <div class="tpl-desc">강한 그라데이션, 신제품 공개나 캠페인에 적합</div>
+          <div class="tpl-tags"><span class="tpl-tag">제품 발표</span><span class="tpl-tag">캠페인</span></div>
+        </div>
+      </div>
+
+      <!-- 5. Playful Pastel -->
+      <div class="tpl-card" onclick="select(this, 'Playful Pastel')">
+        <div class="tpl-check">✓</div>
+        <div class="tpl-expand" onclick="event.stopPropagation(); openModal('play', 'Playful Pastel', '파스텔톤 · 친근하고 가벼운 발표')">⛶</div>
+        <div class="tpl-frame">
+          <div class="ts ts-play">
+            <span class="badge">우리 팀 이야기</span>
+            <h4>같이 만든<br/>한 학기</h4>
+            <div class="sub">우리가 함께한 기록들</div>
+          </div>
+        </div>
+        <div class="tpl-meta">
+          <div class="tpl-name">Playful Pastel</div>
+          <div class="tpl-desc">파스텔 컬러, 친근하고 가벼운 발표에 어울림</div>
+          <div class="tpl-tags"><span class="tpl-tag">친근</span><span class="tpl-tag">내부 행사</span></div>
+        </div>
+      </div>
+
+      <!-- 6. Investor Pitch -->
+      <div class="tpl-card" onclick="select(this, 'Investor Pitch')">
+        <div class="tpl-check">✓</div>
+        <div class="tpl-expand" onclick="event.stopPropagation(); openModal('pitch', 'Investor Pitch', '데이터 강조 · 투자자 발표')">⛶</div>
+        <div class="tpl-frame">
+          <div class="ts ts-pitch">
+            <div class="eb">TRACTION</div>
+            <h4>매출 성장</h4>
+            <div class="bigfig">3.4×</div>
+            <div class="sub">최근 4분기 평균</div>
+            <div class="bars">
+              <span style="height:30%"></span>
+              <span style="height:45%"></span>
+              <span style="height:62%"></span>
+              <span style="height:78%"></span>
+              <span style="height:96%"></span>
+            </div>
+          </div>
+        </div>
+        <div class="tpl-meta">
+          <div class="tpl-name">Investor Pitch</div>
+          <div class="tpl-desc">숫자와 데이터가 두드러지는 투자자 발표용</div>
+          <div class="tpl-tags"><span class="tpl-tag">투자자</span><span class="tpl-tag">데이터</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sticky-actions">
+      <a href="02-upload.html" class="btn btn-ghost" style="padding: 10px 18px; font-size: 14px;">← 이전</a>
+      <div class="selected-info">
+        <div class="mini-thumb">
+          <div class="ts ts-corp">
+            <div class="eb">CORPORATE</div>
+            <h4>제목 미리보기</h4>
+          </div>
+        </div>
+        <span class="pick-label">선택: <b>Corporate Minimal</b></span>
+      </div>
+      <a href="04-deck.html" class="btn" id="next-btn" style="padding: 12px 22px; font-size: 15px;">Corporate Minimal로 만들기 →</a>
+    </div>
+  </main>
+
+  <!-- 큰 미리보기 모달 -->
+  <div class="modal-backdrop" id="modal">
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <div class="title" id="m-title">템플릿 이름</div>
+          <div class="desc" id="m-desc">설명</div>
+        </div>
+        <button class="close-x" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-stage" id="m-stage"><!-- 동적으로 채워짐 --></div>
+        <div class="modal-nav">
+          <button class="arrow">◀</button>
+          <span>1 / 4 · 견본 슬라이드</span>
+          <button class="arrow">▶</button>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" onclick="closeModal()">닫기</button>
+        <button class="btn" onclick="pickFromModal()">이걸로 정하기</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TPL_HTML = {
+      corp:  `<div class="ts ts-corp"><div class="eb">2026 H1 · INTERNAL</div><h4>2026년 상반기<br/>사업 계획</h4><div class="ln"></div><div class="sub">전략기획팀 · 2026.05.16</div></div>`,
+      dark:  `<div class="ts ts-dark"><h4><span class="acc">2026</span> Vision</h4><div class="sub">우리가 만드는 다음 챕터</div><span class="chip">PRODUCT · INTERNAL</span></div>`,
+      edit:  `<div class="ts ts-edit"><div class="eb">Issue 04 · Spring 2026</div><h4>The Quiet<br/>Revolution</h4><div class="rule"></div><div class="sub">조용한 변화가 만들어낸 큰 차이</div></div>`,
+      prod:  `<div class="ts ts-prod"><h4>Hello,<br/>tomorrow.</h4><div class="sub">신제품 공개 · 곧 만나요</div></div>`,
+      play:  `<div class="ts ts-play"><span class="badge">우리 팀 이야기</span><h4>같이 만든<br/>한 학기</h4><div class="sub">우리가 함께한 기록들</div></div>`,
+      pitch: `<div class="ts ts-pitch"><div class="eb">TRACTION</div><h4>매출 성장</h4><div class="bigfig">3.4×</div><div class="sub">최근 4분기 평균</div><div class="bars"><span style="height:30%"></span><span style="height:45%"></span><span style="height:62%"></span><span style="height:78%"></span><span style="height:96%"></span></div></div>`
+    };
+    let pendingPick = null;
+    function select(card, name) {
+      document.querySelectorAll(".tpl-card").forEach((c) => c.classList.remove("selected"));
+      card.classList.add("selected");
+      document.querySelector(".count-label").innerHTML = "선택: <b>" + name + "</b>";
+      document.getElementById("next-btn").textContent = name + "로 만들기 →";
+    }
+    function openModal(key, name, desc) {
+      pendingPick = { key, name };
+      document.getElementById("m-title").textContent = name;
+      document.getElementById("m-desc").textContent = desc;
+      document.getElementById("m-stage").innerHTML = TPL_HTML[key];
+      document.getElementById("modal").classList.add("open");
+    }
+    function closeModal() { document.getElementById("modal").classList.remove("open"); }
+    function pickFromModal() {
+      if (!pendingPick) return;
+      const cards = document.querySelectorAll(".tpl-card");
+      // 카드 중 같은 이름을 가진 카드를 선택 상태로 만들기
+      cards.forEach((c) => {
+        const n = c.querySelector(".tpl-name")?.textContent.trim();
+        if (n === pendingPick.name) select(c, pendingPick.name);
+      });
+      closeModal();
+    }
+    document.getElementById("modal").addEventListener("click", (e) => {
+      if (e.target.id === "modal") closeModal();
+    });
+  </script>
+</body>
+</html>

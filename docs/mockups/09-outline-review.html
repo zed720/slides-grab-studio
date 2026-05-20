@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>outline 검토 — Slides-Grab Web Studio</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* 새 화면 3.5 — outline 검토 + 직접 편집.
+       화면 3 (디자인) 의 "시작하기" 누른 직후 → plan skill 만 호출해서 slide-outline.md 만듦
+       → 이 화면에서 raw markdown 보여줌 + 편집 가능 + [이대로 만들기] / [디자인 다시] */
+
+    .demo-panel {
+      max-width: 1280px;
+      margin: 40px auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+    }
+    .demo-panel h2 { margin: 0 0 8px; font-size: 17px; }
+    .demo-panel p  { margin: 0 0 18px; font-size: 13.5px; color: var(--text-muted); }
+
+    /* 흐름 띠 */
+    .flow {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .flow .step {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+    .flow .step.done { color: var(--success); border-color: rgba(16,185,129,0.25); background: var(--success-soft); }
+    .flow .step.active { color: var(--primary-foreground); background: var(--primary); border-color: var(--primary); font-weight: 600; }
+    .flow .arrow { color: var(--text-soft); font-size: 11px; align-self: center; }
+
+    /* 검토 화면 (실제 페이지 모양) */
+    .review-page {
+      border: 1px dashed var(--border-strong);
+      border-radius: 14px;
+      overflow: hidden;
+      background: var(--surface);
+    }
+    .review-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .review-head .title {
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: -0.01em;
+    }
+    .review-head .sub { font-size: 12.5px; color: var(--text-muted); }
+    .review-head .spacer { flex: 1; }
+    .review-head .ghost {
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: transparent;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .review-head .primary {
+      padding: 8px 18px;
+      border-radius: 10px;
+      border: 1px solid var(--primary);
+      background: var(--primary);
+      color: var(--primary-foreground);
+      font-size: 13.5px;
+      font-weight: 600;
+    }
+
+    .review-body {
+      padding: 16px 18px 20px;
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 18px;
+    }
+    .review-meta {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+    .review-meta b { color: var(--text); }
+    .review-meta h4 {
+      margin: 0 0 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-soft);
+    }
+    .review-meta + .review-meta { margin-top: 14px; }
+
+    .review-editor {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .review-editor label {
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+    .review-editor label b { color: var(--text); }
+    .review-editor textarea {
+      width: 100%;
+      min-height: 480px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12.5px;
+      line-height: 1.55;
+      padding: 14px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      background: #fcfcfd;
+      color: var(--text);
+      outline: none;
+      resize: vertical;
+    }
+    .review-editor textarea:focus { border-color: var(--primary); }
+
+    .review-tip {
+      margin-top: 8px;
+      padding: 10px 14px;
+      background: var(--accent-soft);
+      border: 1px solid #dbeafe;
+      border-radius: 10px;
+      font-size: 12.5px;
+    }
+
+    /* 진행 중 상태 */
+    .planning-state {
+      padding: 60px 24px;
+      text-align: center;
+      background: var(--surface-2);
+      border: 1px dashed var(--border);
+      border-radius: 14px;
+    }
+    .planning-state .spinner {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      margin: 0 auto 14px;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .planning-state .head { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+    .planning-state .sub  { font-size: 13px; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <header class="topnav">
+    <div class="topnav-inner">
+      <a href="index.html" class="brand" style="text-decoration:none;color:inherit">
+        <span class="dot"></span> Slides-Grab Web Studio
+      </a>
+      <div class="crumbs">
+        <span style="font-size:13px;color:var(--text-muted)">화면 3.5 — outline 검토 (새 단계)</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="max-width:1320px">
+
+    <!-- 0) 흐름 띠 -->
+    <div class="demo-panel">
+      <h2>0) 새 흐름</h2>
+      <p>화면 3 (디자인) 와 화면 4 (슬라이드 만들기) 사이에 한 단계 추가됨.</p>
+      <div class="flow">
+        <span class="step done">① AI 도구</span><span class="arrow">→</span>
+        <span class="step done">② 내용 올리기</span><span class="arrow">→</span>
+        <span class="step done">③ 디자인</span><span class="arrow">→</span>
+        <span class="step active">④ outline 검토 <small style="font-weight:400">(NEW)</small></span><span class="arrow">→</span>
+        <span class="step">⑤ 슬라이드 만들기</span>
+      </div>
+    </div>
+
+    <!-- 1) 진행 중 (plan 작업) -->
+    <div class="demo-panel">
+      <h2>1) 화면 3 의 [시작하기] 직후 — plan 작업 중</h2>
+      <p>아직 outline 안 만들어진 상태. plan skill 만 호출 (보통 30초~2분).</p>
+      <div class="planning-state">
+        <div class="spinner"></div>
+        <div class="head">발표 구조 잡는 중…</div>
+        <div class="sub">AI 가 어떤 슬라이드를 만들지 짧게 정리하고 있어요.</div>
+      </div>
+    </div>
+
+    <!-- 2) outline 검토 화면 (메인) -->
+    <div class="demo-panel">
+      <h2>2) outline 도착 — 검토 / 편집 / 진행</h2>
+      <p>frontmatter (yaml) + body 합쳐서 보여줌. 사용자가 텍스트 자체를 직접 수정 가능. 저장 따로 X — 편집한 내용이 [이대로 만들기] 누를 때 그대로 사용됨.</p>
+
+      <div class="review-page">
+        <div class="review-head">
+          <span class="title">발표 구조</span>
+          <span class="sub">— 2026년 1분기 팀 회고</span>
+          <span class="spacer"></span>
+          <button class="ghost">← 디자인 다시</button>
+          <button class="primary">이대로 만들기 →</button>
+        </div>
+
+        <div class="review-body">
+          <div>
+            <div class="review-meta">
+              <h4>분량</h4>
+              <b>10장</b>
+            </div>
+            <div class="review-meta">
+              <h4>디자인</h4>
+              warm-neutral
+            </div>
+            <div class="review-meta">
+              <h4>발표 자료 출처</h4>
+              <code style="font-size:11px;background:var(--surface-2);padding:1px 5px;border-radius:4px">_brief.md</code>
+              <code style="font-size:11px;background:var(--surface-2);padding:1px 5px;border-radius:4px">01-팀-회고.md</code>
+            </div>
+            <div class="review-meta">
+              <h4 style="margin-top:14px">힌트</h4>
+              · 슬라이드 빼기·추가는<br>"## Slide N — 제목"<br>줄 단위로 수정<br>
+              · 분량 줄이려면 슬라이드<br>섹션 통째로 삭제<br>
+              · 'approval:' 줄은 그대로 두기
+            </div>
+          </div>
+
+          <div class="review-editor">
+            <label>슬라이드 한 장당 한 섹션. 자유롭게 수정 → <b>이대로 만들기</b> 누르면 그대로 사용돼요.</label>
+            <textarea spellcheck="false">---
+title: "2026년 1분기 팀 회고"
+style: warm-neutral
+slides: 10
+source:
+  - uploads/_brief.md
+  - uploads/01-팀-회고.md
+approval:
+  style: auto-approved for non-interactive run
+  outline: auto-approved for non-interactive run
+---
+
+# Visual Thesis
+
+Warm editorial tone with cream surfaces, terracotta focus marks, restrained whitespace.
+
+# Content Plan
+
+Recap Q1 with three sections — what we shipped, what slipped, what we change for Q2. Close with team feeling + thanks.
+
+# Outline
+
+## Slide 1 — 표지
+- Title: 2026년 1분기 팀 회고
+- Subtitle: 무엇을 했고, 무엇이 잘 됐고, 무엇을 바꾸나
+- 발표자: 김지영 (PM) · 2026.04.08
+
+## Slide 2 — 우리 팀이 한 일
+- 새 기능 3개 출시 (다크 모드, 알림 센터, 검색 개선)
+- 버그 23개 수정
+- 신규 사용자 1만 2천 명 합류
+- 평균 응답 속도 38% 개선
+
+## Slide 3 — 가장 자랑할 일 (Top 3)
+1. 다크 모드 출시 — 활성 사용자의 41% 채택
+2. 검색 개선 — 결과 클릭률 +27%
+3. 장애 응답 — 평균 복구 시간 4시간 → 38분
+
+## Slide 4 — 숫자로 본 분기
+- 신규 사용자: 12,400 명 (+18% QoQ)
+- 매출: 4억 6천만 원 (+12% QoQ)
+- 응답 속도 (p95): 1.8초 → 1.1초
+- 고객 만족도 (NPS): 42 → 51
+
+## Slide 5 — 안 됐던 것
+- 모바일 앱 출시 일정 한 달 밀림
+- 결제 화면 리뉴얼 진행률 60%
+- 신입 한 명 채용 계획 — 미달성
+
+## Slide 6 — 왜 밀렸나
+- 모바일: iOS 심사 두 번 거절
+- 결제: 외부 게이트웨이 점검 일정 변경
+- 채용: 시작 시점 늦음 + 후보 풀 좁음
+
+## Slide 7 — 2분기에 바꾸는 것
+1. 모바일 앱 4월 안에 출시 (iOS 심사 전담 1명)
+2. 결제 리뉴얼 마무리 (외부 일정 격주 확인)
+3. 채용 한 달 앞당김
+
+## Slide 8 — 팀 분위기
+- 월 1회 팀 회식 (이번 분기 3회)
+- 격주 "고민 나누기" 30분
+- 만족도 조사 결과: 4.2 / 5.0
+
+## Slide 9 — 감사 인사
+- 다크 모드 마무리 박민수님
+- 새벽까지 함께한 인프라팀
+- 신입 온보딩 도와준 모든 분들
+
+## Slide 10 — 마무리
+- 1분기는 출시도 있었고 밀린 것도 있었다
+- 무엇을 어떻게 바꾸는지가 가장 큰 수확
+- 2분기에 다시 만나요. 질문 받겠습니다.</textarea>
+            <div class="review-tip">
+              💡 frontmatter (가장 위 <code>---</code> 사이) 의 <code>style</code> 만 손대지 마세요 — 화면 3 에서 고른 디자인 id 예요. 슬라이드 내용은 자유롭게.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3) 동작 메모 -->
+    <div class="demo-panel">
+      <h2>3) 동작 메모</h2>
+      <ul style="margin:0;padding-left:20px;font-size:13.5px;line-height:1.85">
+        <li><b>화면 3 의 "시작하기" → 새 흐름</b>: 곧바로 화면 4 (만들기) 가 아니라 <b>화면 3.5 (outline 검토)</b> 로.</li>
+        <li><b>plan 만 먼저 호출.</b> AI 가 30초~2분 안에 outline 만들어 디스크 (`slide-outline.md`) 에 저장. 우리 앱이 그 파일 읽어 textarea 채움.</li>
+        <li><b>[이대로 만들기]</b> 클릭 → 화면 4 로 이동 + design + validate 시작. textarea 내용이 그대로 outline.md 에 저장된 후 호출.</li>
+        <li><b>[← 디자인 다시]</b> 클릭 → 화면 3 으로 돌아감. 디자인 다시 고르면 plan 도 처음부터 다시.</li>
+        <li><b>편집 = 디스크 저장만</b> — outline.md 를 사용자 텍스트로 덮어쓰기. AI 한 번 더 호출 안 함. (자연어 조정 "표지 빼줘" 같은 건 다음 단계 후속.)</li>
+        <li><b>새 status</b>: <code style="font-size:12px;background:var(--surface-2);padding:1px 5px;border-radius:4px">draft → outlining → outline-ready → generating → ready</code>. <b>outline-ready</b> 일 때만 이 화면 진입 가능.</li>
+        <li><b>이전 deck 호환</b>: outlining/outline-ready 단계 없이 generating 으로 바로 간 deck (현재 라이브러리의 모든 deck) 은 그대로 표시. 새 deck 부터 적용.</li>
+      </ul>
+    </div>
+
+  </main>
+</body>
+</html>

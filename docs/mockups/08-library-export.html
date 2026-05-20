@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>라이브러리 카드에서 빠른 다운로드 — Slides-Grab Web Studio</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* 라이브러리 카드의 *빠른 다운로드*. 페이지 이동 없이 카드 안에서 모든 게 일어난다.
+       기본 카드는 05-library.html 의 디자인 토큰을 그대로 가져옴.
+       새로 추가되는 부분만 강조: 우하단 ⬇ 버튼, 메뉴 popover, 진행/완료/실패 overlay. */
+
+    .demo-panel {
+      max-width: 1280px;
+      margin: 40px auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+    }
+    .demo-panel h2 {
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+    .demo-panel p {
+      margin: 0 0 18px;
+      font-size: 13.5px;
+      color: var(--text-muted);
+    }
+
+    .card-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+    }
+
+    /* === 라이브러리 카드 (05-library.html 에서 복제) === */
+    .deck-card {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-radius: 14px;
+      border: 2px solid var(--border);
+      background: var(--surface);
+      position: relative;
+    }
+    .deck-card .preview {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      background: #fff;
+      overflow: hidden;
+    }
+    .deck-card .status-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      z-index: 4;
+    }
+    .deck-card .status-ready {
+      background: var(--success-soft);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+    .deck-card .meta {
+      border-top: 1px solid var(--border);
+      padding: 14px 16px;
+    }
+    .deck-card .title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      margin-bottom: 4px;
+    }
+    .deck-card .submeta {
+      font-size: 12.5px;
+      color: var(--text-muted);
+    }
+
+    /* 가짜 슬라이드 미리보기 (03-template.html 토큰 이식) */
+    .ts {
+      width: 100%; height: 100%;
+      padding: 18px 22px;
+      box-sizing: border-box;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .ts-corp { background: #fff; color: #0f172a; }
+    .ts-corp .eb { font-size: 9px; letter-spacing: 0.18em; color: #64748b; text-transform: uppercase; margin-bottom: 8px; font-weight: 600; }
+    .ts-corp h4 { margin: 0 0 6px; font-size: 18px; line-height: 1.15; letter-spacing: -0.01em; font-weight: 700; }
+    .ts-corp .ln { width: 36px; height: 3px; background: #0f172a; margin-top: 8px; }
+    .ts-corp .sub { font-size: 10px; color: #475569; margin-top: 8px; }
+
+    /* === 빠른 다운로드 ⬇ 버튼 === */
+    .quick-dl-btn {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.96);
+      border: 1.5px solid var(--border);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--success);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+      cursor: pointer;
+      z-index: 5;
+      transition: all 0.12s ease;
+    }
+    .quick-dl-btn:hover {
+      border-color: var(--success);
+      background: var(--success-soft);
+    }
+
+    /* === popover 메뉴 (카드 위에 떠 있는 작은 드롭다운) === */
+    .quick-dl-menu {
+      position: absolute;
+      bottom: 50px;
+      right: 8px;
+      width: 220px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow-lg);
+      padding: 6px;
+      z-index: 6;
+    }
+    .quick-dl-menu .menu-head {
+      padding: 8px 10px 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    .quick-dl-menu .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .quick-dl-menu .menu-item:hover {
+      background: var(--surface-2);
+    }
+    .quick-dl-menu .menu-item.disabled {
+      color: var(--text-soft);
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    .quick-dl-menu .menu-item .pill {
+      margin-left: auto;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 999px;
+      border: 1px solid;
+    }
+    .quick-dl-menu .pill.rec  { background: var(--success-soft); color: var(--success); border-color: rgba(16,185,129,0.25); }
+    .quick-dl-menu .pill.beta { background: #fef3c7;             color: #92400e;        border-color: #fde68a; }
+    .quick-dl-menu .pill.soon { background: var(--surface);       color: var(--text-muted); border-color: var(--border); }
+
+    /* === overlay (진행 / 완료 / 실패) — 카드 preview 위에 깔림 === */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(2px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      z-index: 3;
+      padding: 16px;
+      text-align: center;
+    }
+    .overlay .spinner {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 3px solid var(--surface-2);
+      border-top-color: var(--accent);
+      animation: ql-spin 0.9s linear infinite;
+    }
+    @keyframes ql-spin { to { transform: rotate(360deg); } }
+    .overlay .label { font-size: 13.5px; font-weight: 700; }
+    .overlay .sub   { font-size: 11.5px; color: var(--text-muted); }
+    .overlay.ok .circle {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--success-soft);
+      color: var(--success);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 700;
+      border: 1.5px solid rgba(16,185,129,0.3);
+    }
+    .overlay.ok a.go {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: var(--success);
+      color: #fff;
+      font-size: 12.5px;
+      font-weight: 600;
+      border: 1px solid var(--success);
+      text-decoration: none;
+    }
+    .overlay.fail .circle {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--danger-soft);
+      color: var(--danger);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 700;
+      border: 1.5px solid rgba(239,68,68,0.3);
+    }
+    .overlay.fail .retry {
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header class="topnav">
+    <div class="topnav-inner">
+      <a href="index.html" class="brand" style="text-decoration:none;color:inherit">
+        <span class="dot"></span> Slides-Grab Web Studio
+      </a>
+      <div class="crumbs">
+        <span style="font-size:13px;color:var(--text-muted)">라이브러리 카드 빠른 다운로드 (홈 화면의 추가 기능)</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="max-width:1320px">
+
+    <!-- 1) 4 상태 (기본 / 메뉴 / 진행 / 완료 / 실패) -->
+    <div class="demo-panel">
+      <h2>1) 카드 4 상태 — 페이지 이동 없이 카드 안에서 다 일어남</h2>
+      <p>완성된 (status: ready) 카드 우하단에 작은 <b>⬇ 버튼</b>. 클릭 → 형식 메뉴 → 카드 위 overlay 로 진행 → 완료 시 자동 다운로드 + 짧은 안내.</p>
+
+      <div class="card-row">
+
+        <!-- 기본 상태 -->
+        <div>
+          <div style="margin-bottom:8px;font-size:12.5px;color:var(--text-muted);font-weight:600">① 기본</div>
+          <div class="deck-card">
+            <div class="preview">
+              <span class="status-badge status-ready">완성</span>
+              <div class="ts ts-corp">
+                <div class="eb">2026 Q1 KICKOFF</div>
+                <h4>2026년 상반기 사업 계획</h4>
+                <div class="ln"></div>
+                <div class="sub">CFO Office · 2026.05.18</div>
+              </div>
+              <button class="quick-dl-btn" title="빠른 다운로드">⬇</button>
+            </div>
+            <div class="meta">
+              <div class="title">2026년 상반기 사업 계획</div>
+              <div class="submeta">슬라이드 20장 · 5월 18일</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 메뉴 열림 -->
+        <div>
+          <div style="margin-bottom:8px;font-size:12.5px;color:var(--text-muted);font-weight:600">② ⬇ 클릭 → 형식 메뉴</div>
+          <div class="deck-card">
+            <div class="preview">
+              <span class="status-badge status-ready">완성</span>
+              <div class="ts ts-corp">
+                <div class="eb">2026 Q1 KICKOFF</div>
+                <h4>2026년 상반기 사업 계획</h4>
+                <div class="ln"></div>
+                <div class="sub">CFO Office · 2026.05.18</div>
+              </div>
+              <button class="quick-dl-btn" title="빠른 다운로드">⬇</button>
+              <div class="quick-dl-menu">
+                <div class="menu-head">어떤 형식으로 받을까요?</div>
+                <div class="menu-item">PDF 문서 <span class="pill rec">권장</span></div>
+                <div class="menu-item disabled">이미지 묶음 <span class="pill soon">준비 중</span></div>
+                <div class="menu-item">파워포인트 <span class="pill beta">베타</span></div>
+                <div class="menu-item">Figma Slides <span class="pill beta">베타</span></div>
+              </div>
+            </div>
+            <div class="meta">
+              <div class="title">2026년 상반기 사업 계획</div>
+              <div class="submeta">슬라이드 20장 · 5월 18일</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 진행 중 -->
+        <div>
+          <div style="margin-bottom:8px;font-size:12.5px;color:var(--accent);font-weight:600">③ 만드는 중 (overlay)</div>
+          <div class="deck-card">
+            <div class="preview">
+              <span class="status-badge status-ready">완성</span>
+              <div class="ts ts-corp">
+                <div class="eb">2026 Q1 KICKOFF</div>
+                <h4>2026년 상반기 사업 계획</h4>
+                <div class="ln"></div>
+                <div class="sub">CFO Office · 2026.05.18</div>
+              </div>
+              <div class="overlay">
+                <span class="spinner"></span>
+                <span class="label">PDF 만드는 중…</span>
+                <span class="sub">보통 30초~몇 분</span>
+              </div>
+            </div>
+            <div class="meta">
+              <div class="title">2026년 상반기 사업 계획</div>
+              <div class="submeta">슬라이드 20장 · 5월 18일</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 완료 -->
+        <div>
+          <div style="margin-bottom:8px;font-size:12.5px;color:var(--success);font-weight:600">④ 완료 — 자동 다운로드</div>
+          <div class="deck-card">
+            <div class="preview">
+              <span class="status-badge status-ready">완성</span>
+              <div class="ts ts-corp">
+                <div class="eb">2026 Q1 KICKOFF</div>
+                <h4>2026년 상반기 사업 계획</h4>
+                <div class="ln"></div>
+                <div class="sub">CFO Office · 2026.05.18</div>
+              </div>
+              <div class="overlay ok">
+                <span class="circle">✓</span>
+                <span class="label">PDF 가 준비됐어요</span>
+                <span class="sub">자동으로 다운로드가 시작돼요</span>
+                <a class="go" href="#">⬇ 다시 받기</a>
+              </div>
+            </div>
+            <div class="meta">
+              <div class="title">2026년 상반기 사업 계획</div>
+              <div class="submeta">슬라이드 20장 · 5월 18일</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 실패 -->
+        <div>
+          <div style="margin-bottom:8px;font-size:12.5px;color:var(--danger);font-weight:600">⑤ 실패</div>
+          <div class="deck-card">
+            <div class="preview">
+              <span class="status-badge status-ready">완성</span>
+              <div class="ts ts-corp">
+                <div class="eb">2026 Q1 KICKOFF</div>
+                <h4>2026년 상반기 사업 계획</h4>
+                <div class="ln"></div>
+                <div class="sub">CFO Office · 2026.05.18</div>
+              </div>
+              <div class="overlay fail">
+                <span class="circle">!</span>
+                <span class="label">파일을 만들지 못했어요</span>
+                <span class="sub">다른 형식으로 시도해 보세요</span>
+                <button class="retry">다시 시도</button>
+              </div>
+            </div>
+            <div class="meta">
+              <div class="title">2026년 상반기 사업 계획</div>
+              <div class="submeta">슬라이드 20장 · 5월 18일</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 2) 동작 메모 -->
+    <div class="demo-panel">
+      <h2>2) 동작 메모 (디자인 결정)</h2>
+      <ul style="margin:0;padding-left:20px;font-size:13.5px;color:var(--text);line-height:1.85">
+        <li><b>완성된 카드 (status === "ready") 만</b> ⬇ 버튼 노출. 만드는 중 / 실패 카드는 버튼 숨김.</li>
+        <li><b>카드 본체 클릭 동작은 그대로</b> (deck 페이지로 이동). ⬇ 버튼 클릭만 별개로 처리 (이벤트 전파 stop).</li>
+        <li><b>형식 메뉴는 4 옵션</b> — deck 페이지의 ExportModal 과 같은 라벨/순서. PNG 는 같은 "준비 중" 잠금.</li>
+        <li><b>같은 deck 에 한 번에 하나</b> — 이미 진행 중인 export 가 있으면 그 카드의 ⬇ 버튼은 자동으로 overlay (진행 중) 상태. 다른 카드는 무관.</li>
+        <li><b>completed 시 자동 다운로드 trigger</b> — `<a href download>` 를 프로그램으로 click(). 사용자가 한 번 더 받고 싶으면 "다시 받기" 버튼.</li>
+        <li><b>overlay 닫기</b> — completed / failed 상태에서 카드 어디를 클릭하든 overlay 사라지고 ① 기본 상태로. (deck 페이지 이동은 별도 액션 시.)</li>
+        <li><b>모든 진행/완료/실패는 카드 안에서 끝남.</b> deck 페이지 안 들어가도 됨. 단, 같은 deck 의 ExportModal 폴링과 충돌 없음 — 둘 다 같은 jobId 기준이고 server 가 한 deck 1 job 제한.</li>
+      </ul>
+    </div>
+
+  </main>
+</body>
+</html>
