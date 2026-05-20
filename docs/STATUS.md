@@ -162,6 +162,11 @@ slides-grab figma   --slides-dir output --output <name>-figma.pptx              
   - **B. `Slides-Grab Studio.app` bundle** — Info.plist + `Contents/MacOS/SlidesGrabStudio` shell launcher. `.app` 더블클릭 → Terminal 에 `start.command` 띄움. macOS LaunchServices 가 `com.apple.application-bundle` 로 인식. start.command 는 호환성 위해 그대로 유지 (.app 이 내부 호출).
   - **B. README 매일 사용 흐름** — `start.command` 우클릭→열기 → `Slides-Grab Studio.app` 더블클릭으로. Dock 끌어다 두기 가능. 알려진 한계에 ".app 미서명 (Gatekeeper 첫 confirm 필요)" 한 줄 추가.
   - 결과: 비개발자 사용자가 터미널에 직접 칠 명령은 (a) 없거나 (b) Claude 첫 로그인 (`claude`) 한 줄만. 셋업 시간 20~35분 → 10~20분.
+- 2026-05-20: `start.command` 진행률 시각화 — 첫 실행 동안 사용자 막막함 해소.
+  - 4 단계 헤더 (`▶ ...`) 와 단계별 ✓ + 소요 시간 표시 (`SECONDS` 변수 활용, 60초 넘어가면 분/초 분리).
+  - 의존성 + Chromium 단계 분리 — "라이브러리 받는 중 (1~2분)" / "Chromium 받는 중 (3~5분, ~150MB)" 별도 라벨 + 각각 ✓.
+  - Chromium 캐시 (`~/Library/Caches/ms-playwright/chromium-*`) 존재 시 단계 자체 skip — 2번째 실행부터는 보이지도 않음.
+  - 브라우저 자동 open 을 고정 3초 sleep → `curl http://localhost:3000` polling (2초 간격, 최대 2분) 으로 교체. Next dev 첫 컴파일 (30초~1분) 끝나야 응답 시작하므로 빈 페이지 회피. 응답 시 "✓ 서버 준비 완료 — 브라우저 열어요." 출력.
 - 2026-05-20: 환영 화면 (C 옵션) — 라이브러리 EmptyState 자리에 deck 0개일 때만 노출.
   - mockup `docs/mockups/10-welcome.html` — hero (🎬 환영합니다) + 3 단계 안내 카드 + 샘플 빠른 시작 + 큰 시작 버튼 + footer.
   - `app/page.tsx` 의 `EmptyState` → `WelcomeScreen` 으로 교체. 첫 deck 만들면 자동으로 카드 그리드로 전환.
