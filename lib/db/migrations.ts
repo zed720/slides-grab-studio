@@ -81,4 +81,14 @@ export const migrations: Migration[] = [
       PRAGMA foreign_keys = ON;
     `,
   },
+  {
+    version: 3,
+    name: "decks_add_deleted_at",
+    // Phase 2 휴지통 — soft delete. NULL = 살아있음, 숫자 = 삭제된 시각 (ms epoch).
+    // 라이브러리는 deleted_at IS NULL, 휴지통은 deleted_at IS NOT NULL.
+    sql: `
+      ALTER TABLE decks ADD COLUMN deleted_at INTEGER;
+      CREATE INDEX idx_decks_deleted_at ON decks(deleted_at);
+    `,
+  },
 ];

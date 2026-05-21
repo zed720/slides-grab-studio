@@ -25,6 +25,9 @@ export type Deck = {
   source_files_json: string | null;
   created_at: number;
   updated_at: number;
+  // Phase 2 휴지통 — NULL = 살아있음, 숫자 = 삭제된 시각 (ms epoch).
+  // 라이브러리는 deleted_at IS NULL, 휴지통은 deleted_at IS NOT NULL.
+  deleted_at: number | null;
 };
 
 export type CreateDeckInput = {
@@ -50,6 +53,7 @@ export function createDraftDeck(input: CreateDeckInput): Deck {
       input.sourceFiles == null ? null : JSON.stringify(input.sourceFiles),
     created_at: now,
     updated_at: now,
+    deleted_at: null,
   };
   db.prepare(
     `INSERT INTO decks
@@ -70,6 +74,7 @@ export function createDraftDeck(input: CreateDeckInput): Deck {
   return deck;
 }
 
+// 휴지통 안 deck 도 가져옴 — API 호출 시 deck 이 존재하는지 자체는 확인할 수 있어야 (예: 복원).
 export function getDeck(id: string): Deck | null {
   const db = getDb();
   const row = db.prepare("SELECT * FROM decks WHERE id = ?").get(id) as
@@ -78,11 +83,53 @@ export function getDeck(id: string): Deck | null {
   return row ?? null;
 }
 
+// 라이브러리용 — 살아있는 deck 만.
 export function listAllDecks(): Deck[] {
   const db = getDb();
   return db
-    .prepare("SELECT * FROM decks ORDER BY created_at DESC")
+    .prepare("SELECT * FROM decks WHERE deleted_at IS NULL ORDER BY created_at DESC")
     .all() as Deck[];
+}
+
+// 휴지통용 — 삭제된 deck 만, 가장 최근에 삭제된 게 먼저.
+export function listTrashedDecks(): Deck[] {
+  const db = getDb();
+  return db
+    .prepare(
+      "SELECT * FROM decks WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC",
+    )
+    .all() as Deck[];
+}
+
+export function countTrashedDecks(): number {
+  const db = getDb();
+  const row = db
+    .prepare("SELECT COUNT(*) AS n FROM decks WHERE deleted_at IS NOT NULL")
+    .get() as { n: number };
+  return row.n;
+}
+
+// soft delete — 행은 유지, deleted_at 만 표시. data/decks/<id>/ 폴더는 그대로 둠 (복원 가능).
+export function softDeleteDeck(id: string): void {
+  const db = getDb();
+  const now = Date.now();
+  db.prepare(
+    "UPDATE decks SET deleted_at = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL",
+  ).run(now, now, id);
+}
+
+export function restoreDeck(id: string): void {
+  const db = getDb();
+  const now = Date.now();
+  db.prepare(
+    "UPDATE decks SET deleted_at = NULL, updated_at = ? WHERE id = ? AND deleted_at IS NOT NULL",
+  ).run(now, id);
+}
+
+// 영구 삭제 — DB 행 삭제. 디스크 폴더 제거는 호출하는 쪽에서 따로 처리.
+export function permanentDeleteDeck(id: string): void {
+  const db = getDb();
+  db.prepare("DELETE FROM decks WHERE id = ?").run(id);
 }
 
 export function updateDeck(

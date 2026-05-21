@@ -163,6 +163,22 @@ slides-grab figma   --slides-dir output --output <name>-figma.pptx              
   - **B. `Slides-Grab Studio.app` bundle** — Info.plist + `Contents/MacOS/SlidesGrabStudio` shell launcher. `.app` 더블클릭 → Terminal 에 `start.command` 띄움. macOS LaunchServices 가 `com.apple.application-bundle` 로 인식. start.command 는 호환성 위해 그대로 유지 (.app 이 내부 호출).
   - **B. README 매일 사용 흐름** — `start.command` 우클릭→열기 → `Slides-Grab Studio.app` 더블클릭으로. Dock 끌어다 두기 가능. 알려진 한계에 ".app 미서명 (Gatekeeper 첫 confirm 필요)" 한 줄 추가.
   - 결과: 비개발자 사용자가 터미널에 직접 칠 명령은 (a) 없거나 (b) Claude 첫 로그인 (`claude`) 한 줄만. 셋업 시간 20~35분 → 10~20분.
+- 2026-05-21: Phase 2 첫 단추 — 발표 자료 삭제 + 휴지통 흐름.
+  - **DB 스키마** (migration v3) — `decks.deleted_at INTEGER NULL` 추가 + `idx_decks_deleted_at` 인덱스. 라이브러리는 `WHERE deleted_at IS NULL`, 휴지통은 `WHERE deleted_at IS NOT NULL`.
+  - **쿼리 함수**: `listAllDecks` 가 살아있는 deck 만, 새 `listTrashedDecks` / `countTrashedDecks` / `softDeleteDeck` / `restoreDeck` / `permanentDeleteDeck`. `getDeck` 은 휴지통 안 deck 도 조회 가능 (복원 API 가 필요).
+  - **API**:
+    - `DELETE /api/decks/[id]` — soft delete (휴지통으로). 진행 중 (`generating`/`outlining`/`isExporting`/`isBulkEditing`) deck 은 409 로 거부.
+    - `POST /api/decks/[id]/restore` — 복원.
+    - `DELETE /api/decks/[id]/permanent` — 영구 삭제. DB 행 + 디스크 폴더 (`data/decks/<id>/`) 제거. 휴지통에 있는 deck 만.
+    - `GET /api/decks/trash` — 휴지통 목록 (deletedAt 포함).
+    - 기존 `GET /api/decks` 응답에 `trashCount` 추가.
+  - **라이브러리 UI** (`app/page.tsx`):
+    - 카드 hover 시 좌상단 `✕` 버튼 (우상단 status badge 와 안 겹침).
+    - confirm dialog — "‘<title>’ 을 휴지통으로?" + "되돌릴 수 있어요" 안내. 진행 중에는 취소 막힘.
+    - 헤더에 휴지통 있을 때만 `🗑️ 휴지통 (N)` 링크 표시 → `/trash`.
+    - 라이브러리 하단 안내문 — "data/decks 폴더 삭제" → "카드 ✕ 로 휴지통" 으로 교체.
+  - **휴지통 페이지** `/trash` — 회색조 카드 그리드 + 미리보기 위 🗑️ overlay. 각 카드에 `↩ 복원` (한 번에 라이브러리로) / `영구 삭제` (한 번 더 confirm). 빈 상태 안내 포함.
+  - **mockup** — `docs/mockups/11-library-delete.html`, `12-trash.html` 사전 합의.
 - 2026-05-21: Figma export 정상 동작 + upstream PR 초안 작성.
   - A. **친절 안내** — `lib/decks/export.ts` 의 runExport catch 에 `friendlyExportError(format, raw)` 추가. figma + "Background images on DIV elements" 키워드 감지 시 "이 디자인은 Figma Slides 로 변환할 수 없는 요소를 포함하고 있어요 (배경 이미지). 발표용으로는 PDF 를, 편집이 필요하면 PPTX 를 받아 주세요." 로 변환. `components/ExportModal.tsx` 의 figma desc 도 "디자인에 따라 변환이 아예 안 되는 경우가 있어요 (배경 이미지가 많은 템플릿 등)" 로 강화.
   - B. **graceful skip 패치** — `patches/slides-grab@1.2.6.patch` 에 두 변경 추가: (1) `html2pptx.cjs` 의 div background-image 케이스를 `errors.push + return` → silent skip (자식 element 처리는 계속). (2) 마지막 validationErrors 의 `throw new Error(...)` → `console.warn(...)`. 검증 에러가 있어도 전체 export 가 통째로 실패하지 않고 결과물이 일부 시각 누락된 채로 정상 생성. 실측: 우리 5장 deck 의 figma export — 변경 전 0KB 실패 → 변경 후 163KB PPTX 정상.

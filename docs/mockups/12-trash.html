@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>휴지통 · Slides-Grab Web Studio</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* 휴지통 페이지 — 별도 라우트 /trash.
+       라이브러리와 같은 카드 그리드지만 카드 색조가 약간 desaturated.
+       각 카드 하단에 [복원] / [영구 삭제] 두 액션. */
+
+    .trash-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+    .trash-head h1 {
+      margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em;
+      display: inline-flex; align-items: center; gap: 10px;
+    }
+    .trash-head .meta {
+      display: flex; gap: 12px; align-items: center;
+      font-size: 13px; color: var(--text-muted);
+    }
+    .trash-head .back {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-size: 12.5px; font-weight: 500;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .trash-head .back:hover { background: var(--surface-2); text-decoration: none; }
+
+    .trash-sub {
+      margin: 0 0 28px;
+      font-size: 13.5px; color: var(--text-muted);
+    }
+
+    .trash-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .trash-card {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-radius: 14px;
+      border: 1.5px solid var(--border);
+      background: var(--surface-2);
+      opacity: 0.85;
+    }
+    .trash-card .preview {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      background: #fff;
+      overflow: hidden;
+      filter: grayscale(0.4);
+    }
+    .trash-card .preview-stub {
+      width: 100%; height: 100%;
+      background: linear-gradient(135deg, #f1f5f9, #cbd5e1);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted); font-size: 12px;
+    }
+    .trash-card .preview-overlay {
+      position: absolute; inset: 0;
+      background: rgba(255, 255, 255, 0.35);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .trash-card .meta {
+      border-top: 1px solid var(--border);
+      padding: 12px 14px;
+    }
+    .trash-card .title {
+      font-size: 14.5px; font-weight: 700; letter-spacing: -0.01em;
+      margin-bottom: 3px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      color: var(--text);
+    }
+    .trash-card .sub {
+      font-size: 11.5px; color: var(--text-muted);
+    }
+    .trash-card .actions {
+      display: flex; gap: 6px; padding: 0 14px 14px;
+    }
+    .trash-card .restore {
+      flex: 1;
+      padding: 8px 0;
+      border-radius: 9px;
+      border: 1.5px solid var(--accent);
+      background: var(--surface);
+      color: var(--accent);
+      font-size: 12.5px; font-weight: 600; cursor: pointer;
+    }
+    .trash-card .restore:hover { background: var(--accent-soft); }
+    .trash-card .destroy {
+      padding: 8px 12px;
+      border-radius: 9px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      font-size: 12.5px; font-weight: 500; cursor: pointer;
+    }
+    .trash-card .destroy:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .empty {
+      padding: 80px 24px;
+      text-align: center;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="topnav">
+    <div class="topnav-inner">
+      <a class="brand" href="#"><img src="../../public/bitree-logo.png" alt="" /><span>Slides-Grab Web Studio</span></a>
+      <div class="topnav-right"><a class="topnav-link" href="#">내 발표 자료</a></div>
+    </div>
+  </nav>
+
+  <main class="content" style="max-width: 1600px; padding: 40px 32px;">
+    <div class="trash-head">
+      <h1>🗑️ 휴지통</h1>
+      <div class="meta">
+        <span>전체 <b style="color:var(--text)">2</b>개</span>
+        <a class="back" href="#">← 내 발표 자료로</a>
+      </div>
+    </div>
+    <p class="trash-sub">
+      여기서 <b style="color:var(--text)">복원</b>하면 다시 라이브러리로 돌아가요.
+      <b style="color:var(--text)">영구 삭제</b>는 한 번 더 확인 후 폴더가 완전히 사라집니다.
+    </p>
+
+    <div class="trash-grid">
+      <div class="trash-card">
+        <div class="preview">
+          <div class="preview-stub">슬라이드 미리보기</div>
+          <div class="preview-overlay">🗑️</div>
+        </div>
+        <div class="meta">
+          <div class="title">옛 회의록 정리</div>
+          <div class="sub">8장 · 5월 12일 삭제</div>
+        </div>
+        <div class="actions">
+          <button class="restore">↩ 복원</button>
+          <button class="destroy">영구 삭제</button>
+        </div>
+      </div>
+
+      <div class="trash-card">
+        <div class="preview">
+          <div class="preview-stub">슬라이드 미리보기</div>
+          <div class="preview-overlay">🗑️</div>
+        </div>
+        <div class="meta">
+          <div class="title">실험용 디자인 테스트</div>
+          <div class="sub">3장 · 5월 11일 삭제</div>
+        </div>
+        <div class="actions">
+          <button class="restore">↩ 복원</button>
+          <button class="destroy">영구 삭제</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 빈 상태 (참고용) -->
+    <!--
+    <div class="empty">
+      🗑️ 휴지통이 비어있어요.
+    </div>
+    -->
+  </main>
+
+</body>
+</html>

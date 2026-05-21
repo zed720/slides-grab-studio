@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
-import { countTrashedDecks, listAllDecks } from "@/lib/db/queries/decks";
+import { listTrashedDecks } from "@/lib/db/queries/decks";
 import { listSlidesByDeck } from "@/lib/db/queries/slides";
 import { plannedSlideTotal } from "@/lib/decks/generator";
+
+// 휴지통 목록 — deleted_at IS NOT NULL.
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const decks = listAllDecks();
+  const decks = listTrashedDecks();
   const items = decks.map((d) => ({
     id: d.id,
     title: d.title,
@@ -16,9 +18,10 @@ export async function GET() {
     completedCount: listSlidesByDeck(d.id).length,
     createdAt: d.created_at,
     updatedAt: d.updated_at,
+    deletedAt: d.deleted_at,
   }));
   return NextResponse.json(
-    { decks: items, trashCount: countTrashedDecks() },
+    { decks: items },
     { headers: { "Cache-Control": "no-store" } },
   );
 }

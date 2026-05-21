@@ -26,11 +26,16 @@ type DeckListItem = {
 
 type FetchState =
   | { kind: "loading" }
-  | { kind: "ok"; decks: DeckListItem[] }
+  | { kind: "ok"; decks: DeckListItem[]; trashCount: number }
   | { kind: "error"; message: string };
+
+type PendingDelete = { id: string; title: string } | null;
 
 export default function LibraryPage() {
   const [state, setState] = useState<FetchState>({ kind: "loading" });
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -41,8 +46,15 @@ export default function LibraryPage() {
         } | null;
         throw new Error(body?.error ?? `HTTP ${res.status}`);
       }
-      const data = (await res.json()) as { decks: DeckListItem[] };
-      setState({ kind: "ok", decks: data.decks });
+      const data = (await res.json()) as {
+        decks: DeckListItem[];
+        trashCount: number;
+      };
+      setState({
+        kind: "ok",
+        decks: data.decks,
+        trashCount: data.trashCount ?? 0,
+      });
     } catch (err) {
       setState({
         kind: "error",
@@ -58,6 +70,31 @@ export default function LibraryPage() {
     load();
   }, [load]);
 
+  const confirmDelete = useCallback(async () => {
+    if (!pendingDelete) return;
+    setSubmitting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/decks/${pendingDelete.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(body?.error ?? "삭제하지 못했어요.");
+      }
+      setPendingDelete(null);
+      await load();
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : "삭제하지 못했어요.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }, [pendingDelete, load]);
+
   return (
     <>
       <TopNav />
@@ -71,6 +108,15 @@ export default function LibraryPage() {
               <span>
                 전체 <b className="text-[var(--text)]">{state.decks.length}</b>개
               </span>
+            ) : null}
+            {state.kind === "ok" && state.trashCount > 0 ? (
+              <Link
+                href="/trash"
+                className="inline-flex items-center gap-1.5 rounded-[8px] border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[12.5px] font-medium text-[var(--text)] no-underline hover:bg-[var(--surface-2)] hover:no-underline"
+              >
+                🗑️ 휴지통{" "}
+                <b className="font-bold text-[var(--text)]">{state.trashCount}</b>
+              </Link>
             ) : null}
             <button
               type="button"
@@ -101,20 +147,96 @@ export default function LibraryPage() {
             >
               <NewDeckCard />
               {state.decks.map((d) => (
-                <DeckCard key={d.id} deck={d} />
+                <DeckCard
+                  key={d.id}
+                  deck={d}
+                  onDelete={() =>
+                    setPendingDelete({ id: d.id, title: d.title })
+                  }
+                />
               ))}
             </div>
             <p className="mt-10 text-center text-[12.5px] text-[var(--text-muted)]">
-              발표 자료를 지우려면 앱 폴더 안{" "}
-              <code className="rounded bg-[var(--surface-2)] px-1.5 py-0.5 text-[11.5px]">
-                data/decks
-              </code>{" "}
-              에서 해당 폴더를 삭제해 주세요.
+              카드 왼쪽 위 <b className="text-[var(--text)]">✕</b> 버튼으로 휴지통에 보낼 수 있어요. 휴지통에서 30일간 되돌릴 수 있어요.
             </p>
           </>
         )}
       </main>
+
+      {pendingDelete ? (
+        <DeleteDialog
+          title={pendingDelete.title}
+          submitting={submitting}
+          error={deleteError}
+          onCancel={() => {
+            if (submitting) return;
+            setPendingDelete(null);
+            setDeleteError(null);
+          }}
+          onConfirm={confirmDelete}
+        />
+      ) : null}
     </>
+  );
+}
+
+function DeleteDialog({
+  title,
+  submitting,
+  error,
+  onCancel,
+  onConfirm,
+}: {
+  title: string;
+  submitting: boolean;
+  error: string | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/55 p-6 backdrop-blur-sm"
+      onClick={onCancel}
+    >
+      <div
+        className="flex w-full max-w-[440px] flex-col overflow-hidden rounded-[16px] bg-[var(--surface)] shadow-[var(--shadow-lg)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-6 pt-7 pb-5 text-center">
+          <div className="mb-3 text-[40px] leading-none">🗑️</div>
+          <div className="mb-2 text-[18px] font-bold tracking-[-0.01em]">
+            ‘{title}’ 을 휴지통으로?
+          </div>
+          <p className="m-0 text-[13.5px] leading-[1.55] text-[var(--text-muted)]">
+            휴지통으로 보내면 라이브러리에서 사라지고, 휴지통에서{" "}
+            <b className="text-[var(--text)]">되돌릴 수 있어요</b>. 영구 삭제는 휴지통 안에서 한 번 더 확인 후 가능합니다.
+          </p>
+          {error ? (
+            <div className="mt-3 rounded-[10px] border border-[rgba(239,68,68,0.25)] bg-[var(--danger-soft)] px-3.5 py-2.5 text-[12.5px] font-semibold text-[var(--danger)]">
+              {error}
+            </div>
+          ) : null}
+        </div>
+        <div className="flex justify-end gap-2 border-t border-[var(--border)] px-5 py-3.5">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={submitting}
+            className="rounded-[10px] border border-[var(--border)] bg-transparent px-4 py-2 text-[13.5px] font-medium text-[var(--text)] hover:bg-[var(--surface-2)] disabled:opacity-50"
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={submitting}
+            className="rounded-[10px] border border-[var(--danger)] bg-[var(--danger)] px-4 py-2 text-[13.5px] font-semibold text-white hover:opacity-90 disabled:opacity-60"
+          >
+            {submitting ? "보내는 중…" : "🗑️ 휴지통으로 보내기"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -137,10 +259,16 @@ function NewDeckCard() {
   );
 }
 
-function DeckCard({ deck }: { deck: DeckListItem }) {
+function DeckCard({
+  deck,
+  onDelete,
+}: {
+  deck: DeckListItem;
+  onDelete: () => void;
+}) {
   const isReady = deck.status === "ready" && deck.completedCount > 0;
-  // Link 를 wrapper 안에 두고 ⬇ 빠른 다운로드 버튼은 그 형제로 (Link 안 button = invalid HTML).
-  // wrapper 가 hover/transition 담당, Link 는 본체 클릭만.
+  // Link 를 wrapper 안에 두고 ⬇ 빠른 다운로드 / ✕ 휴지통 버튼은 그 형제로
+  // (Link 안 button = invalid HTML).
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-[14px] border-2 border-[var(--border)] bg-[var(--surface)] transition-all hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:shadow-[var(--shadow-md)]">
       <Link
@@ -175,6 +303,19 @@ function DeckCard({ deck }: { deck: DeckListItem }) {
           </div>
         </div>
       </Link>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onDelete();
+        }}
+        aria-label="휴지통으로 보내기"
+        title="휴지통으로 보내기"
+        className="absolute left-2 top-2 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full border border-[rgba(239,68,68,0.3)] bg-white/95 text-[14px] font-semibold text-[var(--danger)] opacity-0 backdrop-blur transition-all hover:scale-105 hover:bg-[var(--danger)] hover:text-white group-hover:opacity-100"
+      >
+        ✕
+      </button>
       {isReady ? <QuickExport deckId={deck.id} /> : null}
     </div>
   );
