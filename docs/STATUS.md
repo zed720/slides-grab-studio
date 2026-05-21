@@ -162,6 +162,10 @@ slides-grab figma   --slides-dir output --output <name>-figma.pptx              
   - **B. `Slides-Grab Studio.app` bundle** — Info.plist + `Contents/MacOS/SlidesGrabStudio` shell launcher. `.app` 더블클릭 → Terminal 에 `start.command` 띄움. macOS LaunchServices 가 `com.apple.application-bundle` 로 인식. start.command 는 호환성 위해 그대로 유지 (.app 이 내부 호출).
   - **B. README 매일 사용 흐름** — `start.command` 우클릭→열기 → `Slides-Grab Studio.app` 더블클릭으로. Dock 끌어다 두기 가능. 알려진 한계에 ".app 미서명 (Gatekeeper 첫 confirm 필요)" 한 줄 추가.
   - 결과: 비개발자 사용자가 터미널에 직접 칠 명령은 (a) 없거나 (b) Claude 첫 로그인 (`claude`) 한 줄만. 셋업 시간 20~35분 → 10~20분.
+- 2026-05-21: editor selection overlay 누수 버그 수정 — 미리보기 화면에 녹색 점선 박스 + caret 보임.
+  - 원인: 우리 contentEditable patch 가 selection 시점에 `contenteditable="true"`, `spellcheck="false"`, 녹색 dashed outline (`rgba(52, 211, 153, 0.7)`) 을 inline 박는데, slides-grab editor 의 throttled auto-save 가 사용자 입력 도중에 trigger 되면 그 상태 그대로 slide HTML 에 영구 저장됨. patch 의 cleanup 은 다음 element 선택 시점에만 실행되어 마지막 element + 종료 타이밍에 누수.
+  - 3겹 우회: (a) `app/api/decks/[id]/slides/[idx]/route.ts` 응답마다 `stripEditorSelectionArtifacts` — 미리보기는 디스크 상태 무관하게 깨끗. (b) `lib/decks/cleanup-html.ts` 의 `cleanupAllSlideArtifacts` 부팅 시 한 번 traverse, 박힌 파일 strip 후 write-back. (c) `export.ts` 의 `runExport` 시작 직전 `cleanupDeckSlideArtifacts` 호출 — 같은 세션 동안 수정 → export 의 짧은 윈도우 차단 (PDF/PPTX 결과물에 박히는 사고 방지).
+  - 후속 (선택): patches/slides-grab@1.2.6.patch 의 save 경로 자체에 strip hook 추가 — 디스크에 처음부터 안 박히게.
 - 2026-05-20: `start.command` 진행률 시각화 — 첫 실행 동안 사용자 막막함 해소.
   - 4 단계 헤더 (`▶ ...`) 와 단계별 ✓ + 소요 시간 표시 (`SECONDS` 변수 활용, 60초 넘어가면 분/초 분리).
   - 의존성 + Chromium 단계 분리 — "라이브러리 받는 중 (1~2분)" / "Chromium 받는 중 (3~5분, ~150MB)" 별도 라벨 + 각각 ✓.

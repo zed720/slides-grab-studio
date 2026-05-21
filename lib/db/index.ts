@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import fs from "node:fs";
 import path from "node:path";
+import { cleanupAllSlideArtifacts } from "../decks/cleanup-html";
 import { migrations } from "./migrations";
 
 type Db = Database.Database;
@@ -20,6 +21,9 @@ export function getDb(): Db {
 
   applyMigrations(db);
   cleanupStaleGeneration(db);
+  // slides-grab editor selection overlay 가 디스크에 박혀 export 결과물에 들어가는
+  // 사고를 막기 위해 부팅 시 한 번 traverse. await 안 함 — 부팅 차단 X.
+  void cleanupAllSlideArtifacts();
 
   globalForDb.__slidesGrabDb = db;
   return db;

@@ -5,6 +5,7 @@ import fssync from "node:fs";
 import path from "node:path";
 import { getDeck } from "@/lib/db/queries/decks";
 import { isBulkEditing } from "@/lib/decks/bulk-edit";
+import { cleanupDeckSlideArtifacts } from "@/lib/decks/cleanup-html";
 import { deckDir, ensureDir } from "@/lib/storage";
 
 // 내보내기 — slides-grab CLI 를 직접 호출해서 deck 을 PDF/PNG/PPTX/Figma 로
@@ -142,6 +143,11 @@ async function runExport(jobId: string): Promise<void> {
   ensureDir(wd);
   const exportsDir = path.join(wd, "exports");
   ensureDir(exportsDir);
+
+  // editor selection overlay 가 slide HTML 에 박혀 있으면 PDF/PPTX 에도 그대로
+  // 들어가서 사고. 부팅 cleanup 이 일반적으로 처리하지만 같은 세션 안 수정 →
+  // export 의 짧은 윈도우를 막기 위해 한 번 더.
+  await cleanupDeckSlideArtifacts(job.deckId);
 
   const projectBin = path.resolve(process.cwd(), "node_modules", ".bin");
   const env = {

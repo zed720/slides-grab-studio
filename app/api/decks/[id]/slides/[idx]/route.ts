@@ -55,6 +55,12 @@ export async function GET(_req: Request, { params }: Params) {
     html = baseTag + html;
   }
 
+  // slides-grab editor 의 selection overlay (contentEditable + 녹색 dashed outline)
+  // 가 우리 patch + throttled auto-save 가 겹치는 타이밍에 디스크에 영구 저장되는
+  // 경우가 있다. 미리보기 iframe 에 그대로 노출되면 텍스트 caret + 점선 박스가 보여
+  // 사용자가 혼란. 응답 직전 strip — 디스크 파일은 그대로 두고 사용자가 보는 HTML 만 깨끗.
+  html = stripEditorSelectionArtifacts(html);
+
   return new NextResponse(html, {
     status: 200,
     headers: {
@@ -62,4 +68,35 @@ export async function GET(_req: Request, { params }: Params) {
       "Cache-Control": "no-store",
     },
   });
+}
+
+// patch 가 selection 시 박는 표시들:
+//   contenteditable="true"
+//   spellcheck="false"
+//   style="outline: 2px dashed rgba(52, 211, 153, 0.7); ..."
+// 이 셋을 strip. 다른 outline (slide 디자인 자체의 outline) 은 보존.
+function stripEditorSelectionArtifacts(html: string): string {
+  let out = html;
+
+  // contenteditable="true" / contenteditable (값 없는) — 속성 자체 제거
+  out = out.replace(/\s+contenteditable\s*=\s*"[^"]*"/gi, "");
+  out = out.replace(/\s+contenteditable\s*=\s*'[^']*'/gi, "");
+  out = out.replace(/\s+contenteditable(?=[\s>])/gi, "");
+
+  // spellcheck="false" / spellcheck — 우리 patch 가 같이 박음
+  out = out.replace(/\s+spellcheck\s*=\s*"[^"]*"/gi, "");
+  out = out.replace(/\s+spellcheck\s*=\s*'[^']*'/gi, "");
+
+  // 녹색 dashed outline — 우리 patch 가 박는 정확한 값. 다른 outline 은 유지.
+  // 매칭: `outline: 2px dashed rgba(52, 211, 153, ...)` 와 그 뒤의 ; (있으면).
+  out = out.replace(
+    /outline\s*:\s*2px\s+dashed\s+rgba\(\s*52\s*,\s*211\s*,\s*153[^)]*\)\s*;?/gi,
+    "",
+  );
+
+  // style="" 가 빈 채로 남으면 그것도 제거 (선택 사항, 깔끔함)
+  out = out.replace(/\s+style\s*=\s*"\s*"/gi, "");
+  out = out.replace(/\s+style\s*=\s*'\s*'/gi, "");
+
+  return out;
 }
