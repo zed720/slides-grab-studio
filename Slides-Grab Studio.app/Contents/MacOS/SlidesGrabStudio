@@ -15,24 +15,20 @@ RESOURCES="$APP_BUNDLE/Contents/Resources"
 
 # ── PRODUCTION 모드 검사 ───────────────────────────────
 if [ -f "$RESOURCES/app/server.js" ]; then
-  # Architecture 별 Node binary 선택
-  ARCH=$(uname -m)
-  case "$ARCH" in
-    arm64)
-      NODE_BIN="$RESOURCES/node-arm64/bin"
-      ;;
-    x86_64)
-      if [ -d "$RESOURCES/node-x64" ]; then
-        NODE_BIN="$RESOURCES/node-x64/bin"
-      else
-        /usr/bin/osascript -e "display dialog \"이 빌드는 Apple Silicon Mac 전용이에요. Intel Mac 용 빌드를 다운로드해 주세요.\" buttons {\"확인\"} default button \"확인\" with icon caution with title \"Slides-Grab Studio\"" >/dev/null 2>&1
-        exit 1
-      fi
-      ;;
-    *)
-      NODE_BIN="$RESOURCES/node-arm64/bin"
-      ;;
-  esac
+  # Architecture 감지 — uname -m 은 Rosetta 컨텍스트에서 x86_64 반환할 수 있어
+  # 신뢰 X. sysctl hw.optional.arm64 가 하드웨어 레벨이라 정확.
+  IS_ARM64=$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null || echo "0")
+  if [ "$IS_ARM64" = "1" ]; then
+    NODE_BIN="$RESOURCES/node-arm64/bin"
+  else
+    # Intel Mac
+    if [ -d "$RESOURCES/node-x64" ]; then
+      NODE_BIN="$RESOURCES/node-x64/bin"
+    else
+      /usr/bin/osascript -e "display dialog \"이 빌드는 Apple Silicon Mac 전용이에요. Intel Mac 용 빌드를 다운로드해 주세요.\" buttons {\"확인\"} default button \"확인\" with icon caution with title \"Slides-Grab Studio\"" >/dev/null 2>&1
+      exit 1
+    fi
+  fi
 
   if [ ! -x "$NODE_BIN/node" ]; then
     /usr/bin/osascript -e "display dialog \"번들된 Node 를 찾지 못했어요. 앱을 다시 받아 주세요.\" buttons {\"확인\"} default button \"확인\" with icon caution with title \"Slides-Grab Studio\"" >/dev/null 2>&1
