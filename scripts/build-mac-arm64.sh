@@ -99,16 +99,21 @@ else
 fi
 
 # ── 6. Playwright Chromium ────────────────────────────
-step "6/9 Playwright Chromium 받기 (~150MB, .app 안 직접)"
+step "6/9 Playwright Chromium headless shell 받기 (.app 안 직접)"
+# slides-grab 이 headless: true 로 launch 하므로 headless shell 만 있으면 충분.
+# chromium 본체 (~340MB) + ffmpeg (~2.5MB) 안 받음 → zip 크기 약 400MB 절약.
 export PLAYWRIGHT_BROWSERS_PATH="$(cd "$RESOURCES" && pwd)/playwright-browsers"
 mkdir -p "$PLAYWRIGHT_BROWSERS_PATH"
-pnpm exec playwright install chromium
+pnpm exec playwright install chromium --only-shell
 
 # ── 7. 빌드 산출물 정리 ───────────────────────────────
 step "7/9 dev artifacts 제거"
 rm -rf "$RESOURCES/app/data"        # 우리 dev 데이터
 rm -rf "$RESOURCES/app/.next/cache" # build cache (런타임 불필요)
-# package.json 의 devDependencies 가 standalone 에 안 들어가지만 한 번 더 확인
+# Playwright 가 혹시 chromium 본체나 ffmpeg 까지 받으면 제거 (안전망).
+# 주의: chromium-[숫자] 만 매치 (chromium_headless_shell-NNNN 는 _ 라 매치 X).
+rm -rf "$PLAYWRIGHT_BROWSERS_PATH"/chromium-[0-9]* 2>/dev/null || true
+rm -rf "$PLAYWRIGHT_BROWSERS_PATH"/ffmpeg-[0-9]* 2>/dev/null || true
 find "$RESOURCES/app/node_modules" -type d -name ".cache" -exec rm -rf {} + 2>/dev/null || true
 
 # ── 8. code signing ──────────────────────────────────
