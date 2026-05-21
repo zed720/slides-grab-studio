@@ -47,5 +47,8 @@ next-env.d.ts
 # runtime data (SQLite, uploads, generated decks)
 /data
 
+# 배포 빌드 산출물 (.app + zip)
+/dist
+
 # slides-grab vendored source (T2에서 방식 확정)
 /vendor/slides-grab

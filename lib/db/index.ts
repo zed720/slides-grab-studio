@@ -2,6 +2,7 @@ import Database from "better-sqlite3";
 import fs from "node:fs";
 import path from "node:path";
 import { cleanupAllSlideArtifacts } from "../decks/cleanup-html";
+import { dataRoot } from "../storage";
 import { migrations } from "./migrations";
 
 type Db = Database.Database;
@@ -11,7 +12,7 @@ const globalForDb = globalThis as unknown as { __slidesGrabDb?: Db };
 export function getDb(): Db {
   if (globalForDb.__slidesGrabDb) return globalForDb.__slidesGrabDb;
 
-  const dataDir = path.resolve(process.cwd(), "data");
+  const dataDir = dataRoot();
   fs.mkdirSync(dataDir, { recursive: true });
   const dbPath = path.join(dataDir, "app.db");
 

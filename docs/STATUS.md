@@ -91,7 +91,7 @@ slides-grab figma   --slides-dir output --output <name>-figma.pptx              
 |---|---|---|
 | ~~낮음~~ ✅ | ~~Codex provider e2e 검증~~ | 2026-05-18 완료 — 6장 deck 5분, slides-grab skill 자동 설치 + provider-aware prompt + `--skip-git-repo-check` 까지 |
 | ~~낮음~~ ✅ | ~~dev server crash robustness~~ | 2026-05-20 완료 — `getDb()` 부팅 시 `status IN ('generating','outlining')` deck 들을 `failed` 로 자동 정리. 사용자가 다시 시도 가능 |
-| 결정 보류 | **card-news 워크플로우** | slides-grab 은 `--mode card-news` 로 720pt × 720pt 정사각형 인스타 카드도 만든다 (별도 `slides-grab-card-news` skill). 우리 앱은 현재 발표 (presentation) 만 지원. 카드 뉴스도 만들려면 화면 2 에 "발표 자료 / 카드 뉴스" 선택 + AI prompt 에 `--mode card-news` + viewer 1:1 비율 + export 도 자동 정사각형 적용 필요. 2026-05-18 사용자 결정: **이번 export 작업 범위 밖**, 추후 결정. |
+| ~~결정 보류~~ ❌ | ~~**card-news 워크플로우**~~ | 2026-05-21 **확정 — 안 함**. 1차 범위 밖. (slides-grab 자체는 `--mode card-news` 로 720×720 인스타 카드 지원하지만 우리 앱은 발표 16:9 만 유지. 미래에 필요해지면 별도 mini-flow 로 추가 가능.) |
 | Phase 2 | 삭제 / 복제 / 휴지통 / 되돌리기 | 1차 범위 밖 |
 | Phase 2 | 회사 테마 / 멀티 유저 / 모바일 | 1차 범위 밖 |
 | 후속 | slides-grab upstream PR | 우리 contentEditable patch 를 본가에 기여 → 다음 버전부터 patch 불필요 |
@@ -163,6 +163,14 @@ slides-grab figma   --slides-dir output --output <name>-figma.pptx              
   - **B. `Slides-Grab Studio.app` bundle** — Info.plist + `Contents/MacOS/SlidesGrabStudio` shell launcher. `.app` 더블클릭 → Terminal 에 `start.command` 띄움. macOS LaunchServices 가 `com.apple.application-bundle` 로 인식. start.command 는 호환성 위해 그대로 유지 (.app 이 내부 호출).
   - **B. README 매일 사용 흐름** — `start.command` 우클릭→열기 → `Slides-Grab Studio.app` 더블클릭으로. Dock 끌어다 두기 가능. 알려진 한계에 ".app 미서명 (Gatekeeper 첫 confirm 필요)" 한 줄 추가.
   - 결과: 비개발자 사용자가 터미널에 직접 칠 명령은 (a) 없거나 (b) Claude 첫 로그인 (`claude`) 한 줄만. 셋업 시간 20~35분 → 10~20분.
+- 2026-05-21: 카드뉴스 워크플로우 **확정 — 안 함** (1차 범위 밖 유지).
+- 2026-05-21: A+ 배포 빌드 인프라 — Node + 의존성 + Chromium 까지 빌드 타임에 번들 (사용자 0 단계).
+  - **A-1. data 위치 마이그레이션** — `lib/storage.ts:dataRoot()` 가 우선순위로 결정: (1) `SLIDES_GRAB_DATA_DIR` 환경 변수, (2) production+macOS 면 `~/Library/Application Support/Slides-Grab Studio/`, (3) fallback dev 의 `./data`. `lib/db/index.ts` + `lib/decks/cleanup-html.ts` 가 모두 dataRoot() 경유. **앱 업데이트 시 deck 데이터 자동 보존**.
+  - **A-2. production standalone build** — `next.config.ts` 에 `output: "standalone"`. `.next/standalone/server.js` 단일 진입점. 빌드 검증 완료.
+  - **A-3. Playwright 위치 통합** — slides-grab 이 spawn 으로 호출되므로 `PLAYWRIGHT_BROWSERS_PATH` 만 launcher 에서 export → 자동 상속. 코드 변경 0.
+  - **A-4. .app launcher 갱신** — `Slides-Grab Studio.app/Contents/MacOS/SlidesGrabStudio` 가 두 모드 자동 분기: production (Resources/app/server.js 발견 시 번들된 Node 로 직접 server 실행 + Dock 종료 시 함께 죽음 + 로그 `~/Library/Logs/Slides-Grab Studio/server.log`) / dev fallback (Resources 비어있으면 기존 start.command 호출). arm64 / x86_64 자동 architecture 분기.
+  - **A-5. 빌드 스크립트** `scripts/build-mac-arm64.sh` + `pnpm build:mac-arm64`. 9 단계: clean → frozen-lockfile install (patch 자동 적용) → standalone build → Node v20.18.0 arm64 다운로드 (캐시) → .app bundle 구조 (Node + standalone + .next/static + public + samples + slides-grab patch 검증) → Playwright Chromium 받기 (`.app/Contents/Resources/playwright-browsers/`) → dev artifacts 제거 → ad-hoc codesign + quarantine 제거 → zip. `/dist/Slides-Grab Studio.app` + `dist/Slides-Grab-Studio-mac-arm64.zip` 생성. `.gitignore` 에 `/dist`.
+  - 예상 zip 크기 ~100~140MB (Node ~25MB + node_modules production ~80MB + Chromium ~150MB → 압축 후 ~120MB).
 - 2026-05-21: Phase 2 첫 단추 — 발표 자료 삭제 + 휴지통 흐름.
   - **DB 스키마** (migration v3) — `decks.deleted_at INTEGER NULL` 추가 + `idx_decks_deleted_at` 인덱스. 라이브러리는 `WHERE deleted_at IS NULL`, 휴지통은 `WHERE deleted_at IS NOT NULL`.
   - **쿼리 함수**: `listAllDecks` 가 살아있는 deck 만, 새 `listTrashedDecks` / `countTrashedDecks` / `softDeleteDeck` / `restoreDeck` / `permanentDeleteDeck`. `getDeck` 은 휴지통 안 deck 도 조회 가능 (복원 API 가 필요).

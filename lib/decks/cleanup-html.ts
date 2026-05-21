@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import fssync from "node:fs";
 import path from "node:path";
+import { dataRoot, deckOutputDir } from "../storage";
 
 // slides-grab editor 의 selection overlay 가 우리 contentEditable patch +
 // throttled auto-save 가 겹치는 타이밍에 slide HTML 에 영구 저장되는 경우가 있다.
@@ -58,7 +59,7 @@ async function cleanupSlideFile(filePath: string): Promise<boolean> {
 // 한 deck 만 cleanup — export 시작 직전 호출. 같은 세션 동안 사용자가 수정 후
 // export 하는 경우 selection overlay 가 결과물에 박히는 사고 방지.
 export async function cleanupDeckSlideArtifacts(deckId: string): Promise<void> {
-  const outDir = path.resolve(process.cwd(), "data", "decks", deckId, "output");
+  const outDir = deckOutputDir(deckId);
   if (!fssync.existsSync(outDir)) return;
   try {
     const files = await fs.readdir(outDir);
@@ -74,7 +75,7 @@ export async function cleanupDeckSlideArtifacts(deckId: string): Promise<void> {
 // 부팅 시 한 번 — data/decks/<id>/output/slide-*.html 을 traverse.
 // 에러는 삼키고 가능한 한 진행. 빈 디렉터리는 skip.
 export async function cleanupAllSlideArtifacts(): Promise<void> {
-  const dataDir = path.resolve(process.cwd(), "data", "decks");
+  const dataDir = path.join(dataRoot(), "decks");
   if (!fssync.existsSync(dataDir)) return;
 
   let cleaned = 0;
