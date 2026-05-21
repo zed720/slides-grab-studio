@@ -156,10 +156,14 @@ mkdir -p "$APP_NM/.pnpm"
 for src_dir in node_modules/.pnpm/*/; do
   pkg=$(basename "$src_dir")
   dst="$APP_NM/.pnpm/$pkg"
-  # slides-grab 자체는 standalone 이 bin/ 만 가져오고 src/ 등을 빠뜨려서
-  # 디렉토리 존재해도 항상 force overwrite (cwd 의 full 버전으로).
+  # 일부 패키지는 standalone tracing 이 디렉토리는 가져오는데 native binary 등
+  # 일부 파일을 빠뜨림. 디렉토리 존재 보고 skip 하면 그 파일들 안 들어감.
+  # 다음 패턴은 항상 force overwrite (cwd 의 full 버전으로):
+  #  - slides-grab@*           — bin/ 만 들어오고 src/ 빠짐
+  #  - sharp@*                 — JS 는 들어오는데 의존 binary 로딩 실패
+  #  - @img+sharp-*            — native .node binary 빠짐 (lib/ 비어있음)
   case "$pkg" in
-    slides-grab@*)
+    slides-grab@*|sharp@*|@img+sharp-*)
       rm -rf "$dst"
       cp -R "$src_dir" "$dst"
       ;;
