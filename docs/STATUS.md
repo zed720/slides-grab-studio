@@ -162,6 +162,10 @@ slides-grab figma   --slides-dir output --output <name>-figma.pptx              
   - **B. `Slides-Grab Studio.app` bundle** — Info.plist + `Contents/MacOS/SlidesGrabStudio` shell launcher. `.app` 더블클릭 → Terminal 에 `start.command` 띄움. macOS LaunchServices 가 `com.apple.application-bundle` 로 인식. start.command 는 호환성 위해 그대로 유지 (.app 이 내부 호출).
   - **B. README 매일 사용 흐름** — `start.command` 우클릭→열기 → `Slides-Grab Studio.app` 더블클릭으로. Dock 끌어다 두기 가능. 알려진 한계에 ".app 미서명 (Gatekeeper 첫 confirm 필요)" 한 줄 추가.
   - 결과: 비개발자 사용자가 터미널에 직접 칠 명령은 (a) 없거나 (b) Claude 첫 로그인 (`claude`) 한 줄만. 셋업 시간 20~35분 → 10~20분.
+- 2026-05-21: 수정 모드 — toolbar/사이드바 클릭 시 텍스트 변경이 저장 안 되던 버그 수정.
+  - 원인: 우리 patch 는 `setSelectedObjectXPath` (= 다음 slide element 선택) 시점에만 save 호출. toolbar 의 next / ← 디자인 바꾸기 / ⬇ 내보내기 같은 슬라이드 바깥 클릭은 selection 을 바꾸지 않아 save 가 안 됨.
+  - 해결: `patches/slides-grab@1.2.6.patch` 의 새 element 선택 시점에 `blur` 이벤트 리스너 추가. contentEditable 가 focus 잃으면 (iframe 바깥 클릭 / toolbar 클릭 / 다른 앱 전환 등) 즉시 `scheduleDirectSave(0, 'Slide text edited.')` 호출. 기존 cleanup 경로 (다음 element 선택 시) 도 그대로 유지 — 두 path 가 cover.
+  - `pnpm patch` / `pnpm patch-commit` 으로 정식 재생성 (hunk header 자동 정확). 사용자 직접 검증 완료.
 - 2026-05-21: editor selection overlay 누수 버그 수정 — 미리보기 화면에 녹색 점선 박스 + caret 보임.
   - 원인: 우리 contentEditable patch 가 selection 시점에 `contenteditable="true"`, `spellcheck="false"`, 녹색 dashed outline (`rgba(52, 211, 153, 0.7)`) 을 inline 박는데, slides-grab editor 의 throttled auto-save 가 사용자 입력 도중에 trigger 되면 그 상태 그대로 slide HTML 에 영구 저장됨. patch 의 cleanup 은 다음 element 선택 시점에만 실행되어 마지막 element + 종료 타이밍에 누수.
   - 3겹 우회: (a) `app/api/decks/[id]/slides/[idx]/route.ts` 응답마다 `stripEditorSelectionArtifacts` — 미리보기는 디스크 상태 무관하게 깨끗. (b) `lib/decks/cleanup-html.ts` 의 `cleanupAllSlideArtifacts` 부팅 시 한 번 traverse, 박힌 파일 strip 후 write-back. (c) `export.ts` 의 `runExport` 시작 직전 `cleanupDeckSlideArtifacts` 호출 — 같은 세션 동안 수정 → export 의 짧은 윈도우 차단 (PDF/PPTX 결과물에 박히는 사고 방지).

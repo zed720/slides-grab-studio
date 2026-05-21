@@ -6,7 +6,7 @@ settings:
 
 patchedDependencies:
   slides-grab@1.2.6:
-    hash: ad39a595aae2c778e79835e33eb0fd3d3dff6e7891070feeb711673bc04c4819
+    hash: 59dcaf1abdc85c7c40076f5865024a2101ebb80c9f3016e1bb5f0f407454cf20
     path: patches/slides-grab@1.2.6.patch
 
 importers:
@@ -27,7 +27,7 @@ importers:
         version: 19.2.4(react@19.2.4)
       slides-grab:
         specifier: 1.2.6
-        version: 1.2.6(patch_hash=ad39a595aae2c778e79835e33eb0fd3d3dff6e7891070feeb711673bc04c4819)(@floating-ui/dom@1.7.6)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)
+        version: 1.2.6(patch_hash=59dcaf1abdc85c7c40076f5865024a2101ebb80c9f3016e1bb5f0f407454cf20)(@floating-ui/dom@1.7.6)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)
     devDependencies:
       '@tailwindcss/postcss':
         specifier: ^4
@@ -7148,7 +7148,7 @@ snapshots:
     dependencies:
       is-arrayish: 0.3.4
 
-  slides-grab@1.2.6(patch_hash=ad39a595aae2c778e79835e33eb0fd3d3dff6e7891070feeb711673bc04c4819)(@floating-ui/dom@1.7.6)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14):
+  slides-grab@1.2.6(patch_hash=59dcaf1abdc85c7c40076f5865024a2101ebb80c9f3016e1bb5f0f407454cf20)(@floating-ui/dom@1.7.6)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14):
     dependencies:
       commander: 12.1.0
       express: 5.2.1
