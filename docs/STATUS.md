@@ -119,6 +119,7 @@ slides-grab figma   --slides-dir output --output <name>-figma.pptx              
 - **macOS 외 미검증.** Linux 도 동작 가능성 높지만 Windows 는 process group kill 등 호환 X. 화면 1 푸터에 "현재 macOS 만 검증" 안내.
 - **AI 호출 시간** — 한 deck 수 분 ~ 10분 이상. 사용자 Claude 토큰 사용.
 - **dev server crash 시** — DB 의 `generating`/`outlining` 박제는 2026-05-20 부팅 cleanup 으로 자동 `failed` 정리. 진행 중이던 AI subprocess 는 부모와 함께 죽음 (zombie 없음).
+- **Figma export 결과물 quality** — graceful skip 패치로 거의 모든 deck 이 export 되지만, PptxGenJS 가 지원 못하는 시각 (div background-image / `<p>` border / 일부 inline margin 등) 은 결과 PPTX 에서 누락. console.warn 으로 어떤 게 빠졌는지 안내됨. 발표용은 여전히 PDF 권장.
 - **수정 도구** — 부분 강조 헤딩의 텍스트 수정은 우리 contentEditable patch 로 작동. 다만 slides-grab editor 의 *사이드바 popoverTextInput* 으로 수정하면 여전히 `innerHTML` 평탄화 → 사용자가 슬라이드 안에서 직접 클릭해서 수정하는 게 정도.
 - **업로드 한도** — 파일당 50MB / 한 요청 합산 200MB. 확장자 `.md/.txt/.pdf/.docx/.pptx` 만 허용. 서버·클라이언트 양쪽 검증.
 - **deck 삭제** — UI 없음 (Phase 1 범위 밖). 라이브러리 하단에 `data/decks/<id>` 폴더 삭제 안내.
@@ -162,6 +163,10 @@ slides-grab figma   --slides-dir output --output <name>-figma.pptx              
   - **B. `Slides-Grab Studio.app` bundle** — Info.plist + `Contents/MacOS/SlidesGrabStudio` shell launcher. `.app` 더블클릭 → Terminal 에 `start.command` 띄움. macOS LaunchServices 가 `com.apple.application-bundle` 로 인식. start.command 는 호환성 위해 그대로 유지 (.app 이 내부 호출).
   - **B. README 매일 사용 흐름** — `start.command` 우클릭→열기 → `Slides-Grab Studio.app` 더블클릭으로. Dock 끌어다 두기 가능. 알려진 한계에 ".app 미서명 (Gatekeeper 첫 confirm 필요)" 한 줄 추가.
   - 결과: 비개발자 사용자가 터미널에 직접 칠 명령은 (a) 없거나 (b) Claude 첫 로그인 (`claude`) 한 줄만. 셋업 시간 20~35분 → 10~20분.
+- 2026-05-21: Figma export 정상 동작 + upstream PR 초안 작성.
+  - A. **친절 안내** — `lib/decks/export.ts` 의 runExport catch 에 `friendlyExportError(format, raw)` 추가. figma + "Background images on DIV elements" 키워드 감지 시 "이 디자인은 Figma Slides 로 변환할 수 없는 요소를 포함하고 있어요 (배경 이미지). 발표용으로는 PDF 를, 편집이 필요하면 PPTX 를 받아 주세요." 로 변환. `components/ExportModal.tsx` 의 figma desc 도 "디자인에 따라 변환이 아예 안 되는 경우가 있어요 (배경 이미지가 많은 템플릿 등)" 로 강화.
+  - B. **graceful skip 패치** — `patches/slides-grab@1.2.6.patch` 에 두 변경 추가: (1) `html2pptx.cjs` 의 div background-image 케이스를 `errors.push + return` → silent skip (자식 element 처리는 계속). (2) 마지막 validationErrors 의 `throw new Error(...)` → `console.warn(...)`. 검증 에러가 있어도 전체 export 가 통째로 실패하지 않고 결과물이 일부 시각 누락된 채로 정상 생성. 실측: 우리 5장 deck 의 figma export — 변경 전 0KB 실패 → 변경 후 163KB PPTX 정상.
+  - upstream PR 초안 두 개 작성: `docs/upstream-prs/01-figma-graceful-validation.md` (`figma` 명령의 graceful 처리), `docs/upstream-prs/02-png-packaging.md` (`package.json#files` 에 `scripts/` 누락 → `slides-grab png` 동작 안 함). 사용자가 GitHub PR 본문에 그대로 복사해서 보낼 수 있게.
 - 2026-05-21: 수정 모드 — toolbar/사이드바 클릭 시 텍스트 변경이 저장 안 되던 버그 수정.
   - 원인: 우리 patch 는 `setSelectedObjectXPath` (= 다음 slide element 선택) 시점에만 save 호출. toolbar 의 next / ← 디자인 바꾸기 / ⬇ 내보내기 같은 슬라이드 바깥 클릭은 selection 을 바꾸지 않아 save 가 안 됨.
   - 해결: `patches/slides-grab@1.2.6.patch` 의 새 element 선택 시점에 `blur` 이벤트 리스너 추가. contentEditable 가 focus 잃으면 (iframe 바깥 클릭 / toolbar 클릭 / 다른 앱 전환 등) 즉시 `scheduleDirectSave(0, 'Slide text edited.')` 호출. 기존 cleanup 경로 (다음 element 선택 시) 도 그대로 유지 — 두 path 가 cover.

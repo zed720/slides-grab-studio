@@ -90,8 +90,9 @@ export function startExport(
       console.error("[export] failed", jobId, err);
       const j = jobs.get(jobId);
       if (j) {
+        const raw = err instanceof Error ? err.message : String(err);
         j.status = "failed";
-        j.error = err instanceof Error ? err.message : String(err);
+        j.error = friendlyExportError(j.format, raw);
         j.completedAt = Date.now();
       }
     })
@@ -346,6 +347,18 @@ function safeFilename(title: string): string {
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "");
   return cleaned || "slides";
+}
+
+// slides-grab CLI 의 stderr 메시지가 비개발자에게 의미 없는 경우 친절 한국어로
+// 변환. 명확히 확인된 패턴만 매핑하고 나머지는 raw 유지 (사용자 진단에 도움).
+function friendlyExportError(format: ExportFormat, raw: string): string {
+  if (
+    format === "figma" &&
+    /Background images on DIV elements/i.test(raw)
+  ) {
+    return "이 디자인은 Figma Slides 로 변환할 수 없는 요소를 포함하고 있어요 (배경 이미지). 발표용으로는 PDF 를, 편집이 필요하면 PPTX 를 받아 주세요.";
+  }
+  return raw;
 }
 
 export function mimeForFormat(format: ExportFormat): string {

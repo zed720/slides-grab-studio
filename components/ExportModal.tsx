@@ -53,7 +53,7 @@ const OPTIONS: readonly OptionDef[] = [
     format: "figma",
     name: "Figma Slides 용 (PPTX)",
     pill: "beta",
-    desc: "Figma Slides 의 Import 메뉴로 불러와 다시 편집할 수 있는 파일. Figma 안에서 폰트가 바뀌거나 모양이 조금 어긋날 수 있어요. 일반 파워포인트가 필요하면 위의 PPTX 를 받으세요.",
+    desc: "Figma Slides 의 Import 메뉴로 불러와 다시 편집할 수 있는 파일. 디자인에 따라 변환이 아예 안 되는 경우가 있어요 (배경 이미지가 많은 템플릿 등). 발표용은 PDF, 편집은 위의 PPTX 를 권장합니다.",
   },
 ] as const;
 
