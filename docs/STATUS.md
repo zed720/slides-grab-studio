@@ -37,23 +37,21 @@ $ claude
 
 ## 1. 지금 어디 있나
 
-**Phase 1 사양 완전 만족. 데모 가능 상태.**
+**Phase 1 사양 완전 만족 + 내보내기 + Phase 2 첫 단추 (휴지통) + 배포 패키지까지 진행.**
 
-`/` → `/start` → `/upload` → `/templates` → `/deck/[id]` 전체 흐름이 실제 AI 호출로 동작. 라이브러리에서 만든 deck 다시 볼 수 있음. 수정 도구는 인라인 편집으로 inline 자식 (색깔 등) 보존.
+`/` → `/start` → `/upload` → `/templates` → `/outline/[id]` → `/deck/[id]` 전체 흐름이 실제 AI 호출로 동작. 라이브러리에서 만든 deck 다시 보기 / 삭제(휴지통) / 복원 / 영구 삭제. 내보내기 4 형식 (PDF / PNG / PPTX / Figma) 중 PDF·PPTX·Figma 동작 (PNG 는 upstream packaging 누락으로 일시 비활성). macOS 비개발자용 `.app` 번들 + ZIP 안에 `설치하기.command` 동봉으로 다운로드 → 우클릭→열기 한 번이면 `/Applications/` 자동 설치 + 실행까지.
 
-남은 건 선택적 robustness 작업뿐.
+남은 건 후속 polish (slides-grab upstream PR 머지, PNG 재활성) 와 본격 Phase 2 (복제, 되돌리기 기록, 회사 테마 등).
 
 ---
 
 ## 2. 남은 작업
 
-### **다음 세션 1순위 — 내보내기 (export) 기능**
+### ✅ 완료 — 내보내기 (export) 기능 (2026-05-18)
 
-사용자 요구: "결과물 추출이 없어. PDF든 PPT든 뭐든." 만든 deck 을 사용자가 PC 에 받아갈 길이 없는 게 가장 큰 한계.
+deck → PDF / PPTX / Figma 다운로드 동작. PNG 만 일시 비활성 (slides-grab packaging 이슈, 아래 표 참고). 아래 작업 단위 기록은 향후 회고용으로 남겨둠.
 
-**좋은 소식**: slides-grab CLI 가 이미 다 지원. 우리가 추가할 건 UI + subprocess 호출 + 다운로드 링크뿐.
-
-slides-grab CLI 실제 옵션 (확인됨, `pnpm exec slides-grab pdf --help` 등):
+**slides-grab CLI 옵션** (확인됨, `pnpm exec slides-grab pdf --help` 등):
 
 ```bash
 slides-grab pdf  --slides-dir output --output <name>.pdf [--mode capture|print] [--resolution 2160p]
@@ -85,6 +83,11 @@ slides-grab figma   --slides-dir output --output <name>-figma.pptx              
 
 **룰 (CLAUDE.md 6)**: export prompt 같은 거 없음. CLI 직접 호출이라 AI 가 개입 안 함. skill 의 export 룰은 slides-grab 자체가 안다.
 
+### 다음 세션 우선순위
+
+1. **slides-grab upstream PR 보내기** — `docs/upstream-prs/01-figma-graceful-validation.md`, `02-png-packaging.md` 두 본문 준비됨. 사용자가 GitHub 에 그대로 복사해서 보내면 됨. 머지되면 PNG export 도 자동 재활성 (한 줄 수정).
+2. **Phase 2 본격 진입** — 휴지통은 끝났으니 그 다음 candidate: 복제 / 되돌리기 기록 / 회사 테마 중 사용자 우선순위 합의 후 진행.
+
 ### 그 외 (낮음)
 
 | 우선순위 | 항목 | 비고 |
@@ -97,7 +100,7 @@ slides-grab figma   --slides-dir output --output <name>-figma.pptx              
 | 후속 | slides-grab upstream PR | 우리 contentEditable patch 를 본가에 기여 → 다음 버전부터 patch 불필요 |
 | 후속 | **slides-grab PNG packaging 누락** | 1.2.6 / 1.3.0 둘 다 `bin/ppt-agent.js` 가 `scripts/html2png.js` 호출하나 `package.json#files` 에서 빠져 있음 → 우리 export 의 PNG 옵션 일시 비활성 (`DISABLED_FORMATS = ["png"]` in `lib/decks/export.ts` + ExportModal `pill: "soon"`). upstream 에 issue/PR 올리거나 patch 로 `html2png.js` 추가 후 Set 한 줄로 다시 활성. |
 
-> "그 다음 작업 진행해" 한 줄이면 위 1순위 (export) 부터 시작합니다.
+> "그 다음 작업 진행해" 한 줄이면 위 "다음 세션 우선순위" 1번 (upstream PR) 부터 시작합니다.
 
 ---
 
@@ -227,6 +230,8 @@ slides-grab figma   --slides-dir output --output <name>-figma.pptx              
   - **`.idea` 정리** — `.gitignore` 에 `.idea/`, `.vscode/` 추가 + 기존 staged 항목 `git rm --cached -rf` 로 unstage.
   - **bulk-edit / export 충돌 메시지** — reject 메시지를 "지금 X 진행 중. 끝난 뒤 다시 시도해 주세요." 톤으로 통일.
   - **Lint 청소** — `app/deck/[id]/page.tsx` 의 unescaped `"` 13개를 한국어 typographic `“”` 로 통일. ref-during-render 1곳 `useEffect([editState])` 로 감쌈. setState-in-effect 3곳 (mount 1회 fetch 패턴, cascading 위험 없음 확인 후 disable + 주석). `lib/decks/generator.ts` 의 unused `_total` 제거.
+- 2026-05-25: `.app` launcher PATH 보강 — Finder/launchd 가 띄운 `.app` 의 PATH 가 `/usr/bin:/bin:/usr/sbin:/sbin` 뿐이라 brew·`~/.local/bin`·`~/.npm-global`·volta·nvm 등에 설치된 `claude`/`codex` 를 못 보던 문제 (provider 점검 화면이 "설치 안 됨" 으로 잘못 표시). `Slides-Grab Studio.app/Contents/MacOS/SlidesGrabStudio` 가 production 분기에서 `/bin/zsh -ilc 'printf %s "$PATH"'` 로 사용자 인터랙티브 셸의 PATH 를 한 번 평가해서 export. zsh 실패 시 bash fallback, 둘 다 실패하면 `$HOME/.local/bin:$HOME/.npm-global/bin:$HOME/.volta/bin:/opt/homebrew/bin:/usr/local/bin` 안전망 추가. dev fallback 분기는 어차피 Terminal 에서 띄우는 거라 PATH 가 정상 → 영향 없음.
+- 2026-05-25: 배포 ZIP 안에 설치 스크립트 동봉 — 사용자가 다운로드 후 `.app` 만 더블클릭 → Gatekeeper 가드에 막혀 헤매던 흐름 단축. `scripts/installer-template/{설치하기.command,읽어보기.txt}` 신설, `scripts/build-mac-arm64.sh` step 9 가 ZIP 묶기 전에 `dist/Slides-Grab Studio/` 폴더 만들어서 `.app` + 두 파일 같이 넣음. `설치하기.command` 는 우클릭→열기 한 번이면 (1) quarantine 제거 (2) `/Applications/` 로 복사 (권한 부족 시 sudo fallback) (3) 자동 실행 (4) 3초 뒤 터미널 자동 닫힘. 두 번째부터는 런치패드/Applications 에서 그냥 클릭. `읽어보기.txt` 는 "처음 한 번은 우클릭→열기" 안내 + 트러블슈팅.
 
 ---
 

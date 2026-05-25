@@ -236,12 +236,33 @@ xattr -cr "$APP_PATH" 2>/dev/null || true
 codesign --force --deep --sign - "$APP_PATH"
 xattr -cr "$APP_PATH" 2>/dev/null || true
 
-# ── 9. ZIP ───────────────────────────────────────────
-step "9/9 ZIP 생성"
+# ── 9. ZIP (installer 와 함께 묶기) ──────────────────
+step "9/9 ZIP 생성 (.app + 설치하기.command + 읽어보기.txt)"
+# 압축을 풀면 'Slides-Grab Studio' 폴더 하나가 나오고 그 안에:
+#   - Slides-Grab Studio.app
+#   - 설치하기.command   (chmod +x — 우클릭→열기 후 자동 설치)
+#   - 읽어보기.txt
+# 이렇게 한 폴더로 묶는 이유: 압축 풀 때 사용자 Downloads 폴더에 파일 흩어지지 않게.
+BUNDLE_DIR="$DIST/Slides-Grab Studio"
+rm -rf "$BUNDLE_DIR"
+mkdir -p "$BUNDLE_DIR"
+mv "$APP_PATH" "$BUNDLE_DIR/$APP_NAME"
+
+INSTALLER_TEMPLATE="scripts/installer-template"
+cp "$INSTALLER_TEMPLATE/설치하기.command" "$BUNDLE_DIR/설치하기.command"
+cp "$INSTALLER_TEMPLATE/읽어보기.txt" "$BUNDLE_DIR/읽어보기.txt"
+chmod +x "$BUNDLE_DIR/설치하기.command"
+
+# 묶음 전체에 quarantine 안 붙은 상태로 (어차피 다운로드 시점에 재부착되지만 일관성).
+xattr -cr "$BUNDLE_DIR" 2>/dev/null || true
+
 cd "$DIST"
 rm -f "$ZIP_NAME"
-zip -r -q "$ZIP_NAME" "$APP_NAME"
+zip -r -q "$ZIP_NAME" "Slides-Grab Studio"
 cd - >/dev/null
+
+# zip 안에 묶었으니 빌드 결과는 BUNDLE_DIR 기준으로 표시.
+APP_PATH="$BUNDLE_DIR/$APP_NAME"
 
 ZIP_SIZE=$(du -sh "$DIST/$ZIP_NAME" | awk '{print $1}')
 APP_SIZE=$(du -sh "$APP_PATH" | awk '{print $1}')

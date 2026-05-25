@@ -36,7 +36,26 @@ if [ -f "$RESOURCES/app/server.js" ]; then
   fi
 
   export NODE_ENV=production
-  export PATH="$NODE_BIN:$PATH"
+
+  # ── 사용자 셸 PATH 끌어오기 ─────────────────────────
+  # Finder/launchd 가 띄운 .app 의 PATH 는 보통 /usr/bin:/bin:/usr/sbin:/sbin
+  # 뿐이라 brew, ~/.local/bin, ~/.npm-global, volta/nvm 등에 설치된
+  # claude/codex 를 못 봄. 사용자 인터랙티브 zsh 의 PATH 를 한 번 평가해서 가져옴.
+  USER_PATH=""
+  if [ -x "/bin/zsh" ]; then
+    USER_PATH="$(/bin/zsh -ilc 'printf %s "$PATH"' 2>/dev/null)"
+  fi
+  if [ -z "$USER_PATH" ] && [ -x "/bin/bash" ]; then
+    USER_PATH="$(/bin/bash -ilc 'printf %s "$PATH"' 2>/dev/null)"
+  fi
+  # 안전망 — 사용자가 안 쓰는 셸이거나 PATH 못 받아왔을 때를 위해 표준 위치 직접 추가.
+  FALLBACK_PATHS="$HOME/.local/bin:$HOME/.npm-global/bin:$HOME/.volta/bin:/opt/homebrew/bin:/usr/local/bin"
+  if [ -n "$USER_PATH" ]; then
+    export PATH="$NODE_BIN:$USER_PATH:$FALLBACK_PATHS"
+  else
+    export PATH="$NODE_BIN:$FALLBACK_PATHS:$PATH"
+  fi
+
   export PLAYWRIGHT_BROWSERS_PATH="$RESOURCES/playwright-browsers"
   export PORT=${SLIDES_GRAB_PORT:-3000}
 
