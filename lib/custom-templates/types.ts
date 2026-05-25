@@ -1,11 +1,25 @@
-// 사용자가 등록한 회사 양식 — brand kit (로고·색·폰트) 만 v1.
-// archetype 갤러리 + AI 새 모양 만들기는 v2/v3.
+// 사용자가 등록한 회사 양식.
+// v1: brand kit (로고·색·폰트) 만.
+// v2: archetypes (슬라이드 종류별 layout 픽) 추가 — 표지·본문 2종부터.
+// v3: AI 새 모양 만들기 — 미정.
+
+// v2 — archetype 종류 키 (v2-minimal 은 "cover" / "body" 만, v2b 에서 확장).
+export type ArchetypeKey = "cover" | "body";
+
+// 옵션 id (예: "A", "B") 또는 null = 안 고름 = AI 가 알아서.
+export type ArchetypeChoice = string | null;
+
+export type ArchetypeMap = {
+  cover?: ArchetypeChoice;
+  body?: ArchetypeChoice;
+};
 
 export type BrandKit = {
   primaryColor: string; // hex, "#003C71"
   accentColor: string; // hex, "#FFB81C"
   fontFamily: string; // "Pretendard", "Apple SD Gothic Neo", 등
   logoPath: string | null; // dataRoot 기준 상대 경로, null 이면 로고 없음
+  archetypes?: ArchetypeMap; // v2 — 없으면 v1 호환 (모든 종류 null)
 };
 
 export type CustomTemplate = {
@@ -22,6 +36,7 @@ export const DEFAULT_BRAND_KIT: BrandKit = {
   accentColor: "#FFB81C",
   fontFamily: "Pretendard",
   logoPath: null,
+  archetypes: { cover: null, body: null },
 };
 
 export const ALLOWED_FONTS = [
