@@ -11,6 +11,8 @@ type Template = {
   name: string;
   description: string;
   previewHtml: string;
+  custom?: boolean;
+  updatedAt?: number;
 };
 
 type FetchState =
@@ -252,31 +254,46 @@ function TemplateCard({
           ✓
         </span>
       ) : null}
-      <span
-        role="button"
-        tabIndex={0}
-        onClick={(e) => {
-          e.stopPropagation();
-          onExpand();
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
+      {template.custom ? (
+        <span className="absolute left-2.5 top-2.5 z-[2] inline-flex items-center gap-1 rounded-full bg-[var(--accent)] px-2 py-0.5 text-[10.5px] font-bold tracking-wide text-white shadow-sm">
+          내 양식
+        </span>
+      ) : (
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
             e.stopPropagation();
             onExpand();
-          }
-        }}
-        className="absolute left-2.5 top-2.5 z-[2] inline-flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-lg bg-white/95 text-[12px] font-semibold text-[var(--text)] opacity-0 shadow-[0_2px_6px_rgba(0,0,0,0.12)] transition-opacity group-hover:opacity-100"
-        aria-label="크게 보기"
-      >
-        ⛶
-      </span>
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              e.stopPropagation();
+              onExpand();
+            }
+          }}
+          className="absolute left-2.5 top-2.5 z-[2] inline-flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-lg bg-white/95 text-[12px] font-semibold text-[var(--text)] opacity-0 shadow-[0_2px_6px_rgba(0,0,0,0.12)] transition-opacity group-hover:opacity-100"
+          aria-label="크게 보기"
+        >
+          ⛶
+        </span>
+      )}
       <div className="relative aspect-video overflow-hidden bg-white">
-        <ScaledSlideFrame
-          title={template.name}
-          srcDoc={template.previewHtml}
-          lazy
-        />
+        {template.custom ? (
+          <iframe
+            title={template.name}
+            src={`/api/my-templates/${template.id.slice("custom:".length)}/preview?v=${template.updatedAt ?? ""}`}
+            sandbox=""
+            className="block h-full w-full border-0"
+          />
+        ) : (
+          <ScaledSlideFrame
+            title={template.name}
+            srcDoc={template.previewHtml}
+            lazy
+          />
+        )}
       </div>
       <div className="border-t border-[var(--border)] bg-[var(--surface)] px-4 py-3.5">
         <div className="mb-0.5 text-[15px] font-bold tracking-[-0.01em]">

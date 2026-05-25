@@ -8,9 +8,19 @@ import {
   type Deck,
   type DeckStatus,
 } from "@/lib/db/queries/decks";
+import {
+  getCustomTemplate,
+  parseBrand,
+} from "@/lib/db/queries/custom-templates";
 import { insertSlide, listSlidesByDeck } from "@/lib/db/queries/slides";
+import { brandKitToInstruction } from "@/lib/custom-templates/instruction";
 import { BITREE_DESIGN_INSTRUCTIONS } from "@/lib/slides-grab/bitree-template";
-import { deckDir, deckOutputDir, ensureDir } from "@/lib/storage";
+import {
+  dataRoot,
+  deckDir,
+  deckOutputDir,
+  ensureDir,
+} from "@/lib/storage";
 
 // 진짜 AI 호출 generator.
 // provider 의 non-interactive 모드 (`claude -p` / `codex exec`) 로 spawn,
@@ -454,6 +464,29 @@ function styleInstruction(
       ? " outline 의 frontmatter 의 style 값은 비워두거나 `custom-bitree` 로 명시."
       : "";
     return BITREE_DESIGN_INSTRUCTIONS + fm;
+  }
+  // 사용자가 만든 양식 — DB 의 custom_templates 에서 brand kit 읽어 instruction 생성.
+  // template_id 형식: "custom:<uuid>"
+  if (deck.template_id.startsWith("custom:")) {
+    const customId = deck.template_id.slice("custom:".length);
+    const tpl = getCustomTemplate(customId);
+    if (!tpl || tpl.deleted_at !== null) {
+      // 사용자가 양식을 지웠으면 instruction 없이 진행 (slides-grab 기본 디자인).
+      return "";
+    }
+    const brand = parseBrand(tpl);
+    const logoAbs = brand.logoPath
+      ? path.resolve(dataRoot(), brand.logoPath)
+      : null;
+    const instruction = brandKitToInstruction({
+      brand,
+      templateName: tpl.name,
+      logoAbsolutePath: logoAbs,
+    });
+    const fm = opts.withFrontmatter
+      ? " outline 의 frontmatter 의 style 값은 비워두거나 `custom-user` 로 명시."
+      : "";
+    return instruction + fm;
   }
   return opts.withFrontmatter
     ? `디자인 스타일: \`${deck.template_id}\` (slides-grab list-styles 의 id). outline 의 frontmatter 에 \`style: ${deck.template_id}\` 로 명시.`
