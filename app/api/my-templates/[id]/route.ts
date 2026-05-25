@@ -5,8 +5,9 @@ import {
   softDeleteCustomTemplate,
   updateCustomTemplate,
 } from "@/lib/db/queries/custom-templates";
-import type { BrandKit } from "@/lib/custom-templates/types";
+import type { BrandKit, ArchetypeMap } from "@/lib/custom-templates/types";
 import { ALLOWED_FONTS } from "@/lib/custom-templates/types";
+import { getArchetypeOption } from "@/lib/custom-templates/archetypes";
 
 function isHex(s: unknown): s is string {
   return typeof s === "string" && /^#[0-9a-f]{6}$/i.test(s);
@@ -89,6 +90,29 @@ export async function PATCH(
         );
       }
       next.fontFamily = body.brand.fontFamily;
+    }
+    if (body.brand.archetypes !== undefined) {
+      const cur = current.archetypes ?? {};
+      const inputArchetypes = body.brand.archetypes as ArchetypeMap;
+      const merged: ArchetypeMap = { ...cur };
+      for (const k of ["cover", "body"] as const) {
+        if (k in inputArchetypes) {
+          const v = inputArchetypes[k];
+          if (v === null) {
+            merged[k] = null;
+          } else if (typeof v === "string") {
+            const opt = getArchetypeOption(k, v);
+            if (!opt) {
+              return NextResponse.json(
+                { error: `알 수 없는 ${k} 옵션이에요.` },
+                { status: 400 },
+              );
+            }
+            merged[k] = v;
+          }
+        }
+      }
+      next.archetypes = merged;
     }
     // logoPath 는 별도 업로드 API 에서만 갱신 — body 로 직접 변경 X
     patch.brand = next;
