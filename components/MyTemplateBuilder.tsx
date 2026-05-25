@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ColorPicker } from "./ColorPicker";
+import { ArchetypePicker } from "./ArchetypePicker";
 import type { BrandKit } from "@/lib/custom-templates/types";
 import { ALLOWED_FONTS } from "@/lib/custom-templates/types";
 
@@ -50,11 +51,16 @@ export function MyTemplateBuilder({
       ? `/api/my-templates/${templateId}/logo/file?v=${logoVer}`
       : null;
 
+  const archCover = brand.archetypes?.cover ?? "";
+  const archBody = brand.archetypes?.body ?? "";
+
   const previewSrc =
     `/api/my-templates/${templateId}/preview` +
     `?primary=${encodeURIComponent(brand.primaryColor)}` +
     `&accent=${encodeURIComponent(brand.accentColor)}` +
     `&font=${encodeURIComponent(brand.fontFamily)}` +
+    `&cover=${encodeURIComponent(archCover)}` +
+    `&body=${encodeURIComponent(archBody)}` +
     `&logoVer=${logoVer || "none"}`;
 
   const save = async (redirect = false) => {
@@ -267,19 +273,26 @@ export function MyTemplateBuilder({
         </div>
       </section>
 
-      {/* 2. 슬라이드 종류 섹션 — v2 placeholder */}
-      <section className="mb-4 rounded-2xl border-[1.5px] border-dashed border-[var(--border)] bg-[var(--surface-2)] p-6 text-center">
-        <h2 className="m-0 mb-2 flex items-center justify-center gap-2 text-[15.5px] font-bold text-[var(--text-muted)]">
-          <span className="inline-flex h-[22px] w-[22px] items-center justify-center rounded-full bg-[var(--text-soft)] text-[11px] font-bold text-white">
+      {/* 2. 슬라이드 종류 섹션 — v2 minimal: 표지·본문 2 종 */}
+      <section className="mb-4 rounded-2xl border-[1.5px] border-[var(--border)] bg-white p-6">
+        <h2 className="m-0 mb-1 flex items-center gap-2 text-[16px] font-bold tracking-[-0.01em]">
+          <span className="inline-flex h-[22px] w-[22px] items-center justify-center rounded-full bg-[var(--primary)] text-[11px] font-bold text-[var(--primary-foreground)]">
             2
           </span>
-          슬라이드 종류별 모양 (다음 업데이트)
+          슬라이드 종류별 모양
         </h2>
-        <p className="m-0 text-[13px] text-[var(--text-muted)]">
-          표지·목차·본문·표·차트·이미지·마무리 7종 갤러리는 다음 버전에서
-          추가됩니다. 지금은 위 브랜드(색·폰트·로고)만 적용된 양식이
-          만들어져요.
+        <p className="mb-5 pl-[30px] text-[13px] text-[var(--text-muted)]">
+          각 종류마다 마음에 드는 모양을 하나 골라 두면, 그 양식대로 슬라이드가
+          만들어져요. 안 고른 종류는 AI 가 알아서 비슷한 모양으로 채워요.
+          <span className="ml-1 text-[var(--text-soft)]">
+            (지금은 표지·본문 2 종부터 — 나머지 5 종은 다음 업데이트)
+          </span>
         </p>
+        <ArchetypePicker
+          brand={brand}
+          archetypes={brand.archetypes ?? {}}
+          onChange={(arch) => setBrand({ ...brand, archetypes: arch })}
+        />
       </section>
 
       {/* 에러 */}
