@@ -35,10 +35,12 @@ export function isGenerating(deckId: string): boolean {
 }
 
 // 슬라이드 분량은 여러 신호의 *최대값* 으로 결정한다 — 디스크에 실제로 있는
-// slide-NN.html 의 max idx, outline.md 의 Slide Count, 사용자 입력 분량, 그리고
-// 최소 fallback 6 중 가장 큰 값. AI 가 bulk-edit 으로 슬라이드를 추가했거나
-// outline 의 원래 계획보다 더 많이 만들면 디스크 max 가 우선이라 UI 가 모든
-// 슬라이드를 표시한다.
+// slide-NN.html 의 max idx, outline.md 의 Slide Count, 사용자 입력 분량 중
+// 가장 큰 값. 셋 다 0 일 때만 fallback 6 사용 (시작 직후 UI 가 "0/0" 표시
+// 안 되게). 이전 버그: fallback 6 을 max 인자에 넣어서 outline 이 5 면 항상
+// 6 으로 올라가 마지막에 "만드는 중..." 가짜 placeholder 표시됨.
+// AI 가 bulk-edit 으로 슬라이드를 추가했거나 outline 의 원래 계획보다 더 많이
+// 만들면 디스크 max 가 우선이라 UI 가 모든 슬라이드를 표시한다.
 export function plannedSlideTotal(deck: Pick<Deck, "id" | "source_text">): number {
   // 1) 디스크의 실제 slide-NN.html 의 max idx
   let diskMax = 0;
@@ -89,7 +91,8 @@ export function plannedSlideTotal(deck: Pick<Deck, "id" | "source_text">): numbe
     else if (v.startsWith("20")) userCount = 20;
   }
 
-  return Math.max(diskMax, outlineCount, userCount, 6);
+  const max = Math.max(diskMax, outlineCount, userCount);
+  return max > 0 ? max : 6;
 }
 
 export function isUserSlideCountSpecified(deck: Pick<Deck, "source_text">): boolean {
