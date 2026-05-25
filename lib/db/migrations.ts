@@ -91,4 +91,22 @@ export const migrations: Migration[] = [
       CREATE INDEX idx_decks_deleted_at ON decks(deleted_at);
     `,
   },
+  {
+    version: 4,
+    name: "custom_templates",
+    // 사용자가 등록한 회사 양식. brand_json 에 BrandKit (색/폰트/로고경로) JSON.
+    // 로고 이미지 자체는 디스크 (dataRoot/custom-templates/<id>/) 에 저장.
+    // soft delete — deleted_at IS NULL 이 살아있음.
+    sql: `
+      CREATE TABLE custom_templates (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        brand_json TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        deleted_at INTEGER
+      );
+      CREATE INDEX idx_custom_templates_deleted_at ON custom_templates(deleted_at);
+    `,
+  },
 ];
