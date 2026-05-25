@@ -40,6 +40,12 @@ export function deckOutputDir(deckId: string): string {
   return path.join(deckDir(deckId), "output");
 }
 
+// 사용자 양식 (custom_templates) 별 디스크 폴더.
+// 현재는 로고 이미지 (logo.png/jpg/svg/webp) 한 개만 들어감.
+export function customTemplatesDir(id: string): string {
+  return path.join(dataRoot(), "custom-templates", id);
+}
+
 export function ensureDir(p: string): string {
   fs.mkdirSync(p, { recursive: true });
   return p;
