@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ColorPicker } from "./ColorPicker";
 import { ArchetypePicker } from "./ArchetypePicker";
+import { ScaledSlideFrame } from "./ScaledSlideFrame";
 import type { BrandKit } from "@/lib/custom-templates/types";
 import { ALLOWED_FONTS } from "@/lib/custom-templates/types";
 
@@ -263,13 +264,8 @@ export function MyTemplateBuilder({
         </div>
 
         {/* 라이브 미리보기 — sample slide 가 이 brand 로 즉시 렌더 */}
-        <div className="mt-5 overflow-hidden rounded-[12px] border border-[var(--border)] shadow-sm">
-          <iframe
-            title="미리보기"
-            src={previewSrc}
-            sandbox=""
-            className="block aspect-video w-full border-0"
-          />
+        <div className="mt-5 aspect-video w-full overflow-hidden rounded-[12px] border border-[var(--border)] bg-white shadow-sm">
+          <ScaledSlideFrame title="미리보기" src={previewSrc} />
         </div>
       </section>
 

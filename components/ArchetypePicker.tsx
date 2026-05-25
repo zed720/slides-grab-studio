@@ -2,6 +2,7 @@
 
 import type { ArchetypeMap, BrandKit } from "@/lib/custom-templates/types";
 import { ARCHETYPES } from "@/lib/custom-templates/archetypes";
+import { ScaledSlideFrame } from "./ScaledSlideFrame";
 
 type Props = {
   brand: BrandKit;
@@ -71,11 +72,10 @@ export function ArchetypePicker({ brand, archetypes, onChange }: Props) {
                       </span>
                     ) : null}
                     <div className="aspect-video w-full overflow-hidden bg-white">
-                      <iframe
+                      <ScaledSlideFrame
                         title={`${meta.label} ${opt.name}`}
                         srcDoc={html}
-                        sandbox=""
-                        className="block h-full w-full border-0"
+                        lazy
                       />
                     </div>
                     <div className="border-t border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-[12.5px]">

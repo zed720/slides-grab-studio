@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { TopNav } from "@/components/TopNav";
+import { ScaledSlideFrame } from "@/components/ScaledSlideFrame";
 import type { BrandKit } from "@/lib/custom-templates/types";
 
 type Item = { id: string; name: string; brand: BrandKit; updatedAt: number };
@@ -114,12 +115,11 @@ export default function MyTemplatesPage() {
                 key={t.id}
                 className="flex flex-col overflow-hidden rounded-[14px] border-[1.5px] border-[var(--border)] bg-white transition-all hover:-translate-y-0.5 hover:shadow-md"
               >
-                <div className="relative aspect-video bg-[var(--surface-2)]">
-                  <iframe
+                <div className="relative aspect-video overflow-hidden bg-[var(--surface-2)]">
+                  <ScaledSlideFrame
                     title={t.name}
                     src={`/api/my-templates/${t.id}/preview?logoVer=${t.updatedAt}`}
-                    sandbox=""
-                    className="block h-full w-full border-0"
+                    lazy
                   />
                 </div>
                 <div className="border-t border-[var(--border)] px-4 py-3.5">

@@ -281,11 +281,10 @@ function TemplateCard({
       )}
       <div className="relative aspect-video overflow-hidden bg-white">
         {template.custom ? (
-          <iframe
+          <ScaledSlideFrame
             title={template.name}
             src={`/api/my-templates/${template.id.slice("custom:".length)}/preview?v=${template.updatedAt ?? ""}`}
-            sandbox=""
-            className="block h-full w-full border-0"
+            lazy
           />
         ) : (
           <ScaledSlideFrame
