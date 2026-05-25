@@ -28,8 +28,11 @@ export function ColorPicker({
   const id = useId();
   const [text, setText] = useState(value);
 
-  // 부모가 value 를 갱신하면 text 도 같이 (다른 경로로 값 바뀔 때 대비)
+  // 부모가 value 를 갱신하면 text 도 같이 (예: 프리셋 클릭 시).
+  // 사용자가 hex 입력 중일 때 임시 invalid 값 (예: "#003C") 을 허용해야 해서
+  // local text state 가 필요 — 부모 prop 와 동기화는 effect 로.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setText(value);
   }, [value]);
 

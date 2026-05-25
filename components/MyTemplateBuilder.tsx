@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ColorPicker } from "./ColorPicker";
 import type { BrandKit } from "@/lib/custom-templates/types";
 import { ALLOWED_FONTS } from "@/lib/custom-templates/types";
@@ -37,9 +38,8 @@ export function MyTemplateBuilder({
   const router = useRouter();
   const [name, setName] = useState(initialName);
   const [brand, setBrand] = useState<BrandKit>(initialBrand);
-  const [logoVer, setLogoVer] = useState<number>(
-    initialBrand.logoPath ? Date.now() : 0,
-  );
+  // 0 = 로고 없음, > 0 = cache buster (업로드 직후 Date.now() 로 갱신).
+  const [logoVer, setLogoVer] = useState<number>(initialBrand.logoPath ? 1 : 0);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -128,12 +128,12 @@ export function MyTemplateBuilder({
     <div className="mx-auto max-w-[1080px] px-6 py-8 pb-24">
       {/* 헤더 — 양식 이름 */}
       <div className="mb-5 flex items-center gap-3">
-        <a
+        <Link
           href="/my-templates"
           className="rounded-lg px-2.5 py-1.5 text-[13.5px] text-[var(--text-muted)] no-underline hover:bg-[var(--surface-2)] hover:no-underline"
         >
           ◀ 양식 목록
-        </a>
+        </Link>
         <input
           type="text"
           value={name}
@@ -298,12 +298,12 @@ export function MyTemplateBuilder({
           WebkitBackdropFilter: "saturate(180%) blur(14px)",
         }}
       >
-        <a
+        <Link
           href="/my-templates"
           className="rounded-[10px] border border-[var(--border)] bg-transparent px-4 py-2.5 text-[14px] font-semibold text-[var(--text)] no-underline hover:bg-[var(--surface-2)] hover:no-underline"
         >
           취소
-        </a>
+        </Link>
         <div className="flex-1 text-[13px] text-[var(--text-muted)]">
           {saving
             ? "저장 중…"

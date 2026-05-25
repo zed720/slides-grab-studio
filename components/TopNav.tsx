@@ -46,7 +46,20 @@ export function TopNav({ active }: { active?: Step }) {
             ))}
           </div>
         ) : (
-          <div className="flex-1" />
+          <div className="flex flex-1 items-center justify-end gap-1 text-[13.5px]">
+            <Link
+              href="/"
+              className="rounded-lg px-3 py-1.5 font-medium text-[var(--text-muted)] no-underline hover:bg-[var(--surface-2)] hover:text-[var(--text)] hover:no-underline"
+            >
+              내 발표 자료
+            </Link>
+            <Link
+              href="/my-templates"
+              className="rounded-lg px-3 py-1.5 font-medium text-[var(--text-muted)] no-underline hover:bg-[var(--surface-2)] hover:text-[var(--text)] hover:no-underline"
+            >
+              내 양식
+            </Link>
+          </div>
         )}
       </div>
     </header>
