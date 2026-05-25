@@ -4,8 +4,9 @@ import {
   getCustomTemplate,
   parseBrand,
 } from "@/lib/db/queries/custom-templates";
-import type { BrandKit } from "@/lib/custom-templates/types";
+import type { ArchetypeMap, BrandKit } from "@/lib/custom-templates/types";
 import { ALLOWED_FONTS } from "@/lib/custom-templates/types";
+import { getArchetypeOption } from "@/lib/custom-templates/archetypes";
 
 function isHex(s: string | null): s is string {
   return !!s && /^#[0-9a-f]{6}$/i.test(s);
@@ -38,8 +39,29 @@ export async function GET(
         : stored.fontFamily,
   };
 
+  // archetype 도 query 로 override 가능 (빌더가 옵션 토글하는 중에도 즉시 반영).
+  // 빈 문자열이면 "안 고름" 으로 처리 (저장된 값보다 우선시 X — 저장된 값 fallback).
+  const coverQ = url.searchParams.get("cover");
+  const bodyQ = url.searchParams.get("body");
+  const validatedCover =
+    coverQ !== null
+      ? coverQ.length > 0 && getArchetypeOption("cover", coverQ)
+        ? coverQ
+        : null
+      : (stored.archetypes?.cover ?? null);
+  const validatedBody =
+    bodyQ !== null
+      ? bodyQ.length > 0 && getArchetypeOption("body", bodyQ)
+        ? bodyQ
+        : null
+      : (stored.archetypes?.body ?? null);
+  const archetypes: ArchetypeMap = {
+    cover: validatedCover,
+    body: validatedBody,
+  };
+
   const logoUrl = brand.logoPath ? `/api/my-templates/${id}/logo/file` : null;
-  const html = buildPreviewHtml({ brand, logoUrl });
+  const html = buildPreviewHtml({ brand, logoUrl, archetypes });
   return new NextResponse(html, {
     headers: {
       "content-type": "text/html; charset=utf-8",

@@ -1,8 +1,54 @@
-import type { BrandKit } from "./types";
+import type { ArchetypeMap, BrandKit } from "./types";
+import { getArchetypeOption } from "./archetypes";
 
-// 빌더 미리보기용 — 사용자 brand kit 으로 sample slide HTML 한 장.
-// 실제 deck 생성과는 별개. UI 가 iframe srcDoc / src 로 띄움.
+// 빌더 미리보기용 — 사용자 brand kit (+ 골라진 표지 archetype 있으면 그 모양)
+// 으로 sample slide HTML 한 장. 실제 deck 생성과는 별개. UI 가 iframe srcDoc/src
+// 로 띄움.
 export function buildPreviewHtml(opts: {
+  brand: BrandKit;
+  logoUrl: string | null;
+  archetypes?: ArchetypeMap;
+  sampleTitle?: string;
+}): string {
+  const { brand, logoUrl, archetypes } = opts;
+
+  // 표지 archetype 골라져 있으면 그 render 사용 (사용자가 갤러리에서 본 그 모양
+  // 그대로 미리보기에 표시). archetype 의 logoPlaceholder 가 만든 BR span 을
+  // 실제 logoUrl 의 <img> 로 후처리 교체.
+  const cover = getArchetypeOption("cover", archetypes?.cover ?? null);
+  if (cover) {
+    let html = cover.render(brand, {
+      title: opts.sampleTitle ?? "2026년 상반기<br/>사업 계획",
+      subtitle: "전략기획팀 · 2026.05",
+      meta: "2026 H1 · 내부 공유",
+    });
+    if (logoUrl) {
+      html = injectLogoIntoFirstSlot(html, logoUrl);
+    }
+    return html;
+  }
+
+  return buildDefaultSample({
+    brand,
+    logoUrl,
+    sampleTitle: opts.sampleTitle,
+  });
+}
+
+// archetype 의 `<span ...>BR</span>` placeholder 를 logoUrl 의 <img> 로 교체.
+// archetypes.ts 의 logoPlaceholder() 가 만든 패턴에 의존.
+function injectLogoIntoFirstSlot(html: string, logoUrl: string): string {
+  const safeUrl = logoUrl.replace(/"/g, "&quot;");
+  // 첫 번째 BR placeholder span 만 교체 (top 영역의 로고).
+  return html.replace(
+    /<span style="display:inline-flex;align-items:center;justify-content:center;width:(\d+)px;height:(\d+)px;background:[^;]+;color:[^;]+;border-radius:6px;font-weight:800;font-size:\d+px;flex-shrink:0">BR<\/span>/,
+    (_match, w: string, h: string) =>
+      `<img src="${safeUrl}" alt="로고" style="width:${w}px;height:${h}px;object-fit:contain;padding:4px;background:#fff;border-radius:6px;flex-shrink:0"/>`,
+  );
+}
+
+// 표지 archetype 안 골라진 경우의 기본 sample slide.
+function buildDefaultSample(opts: {
   brand: BrandKit;
   logoUrl: string | null;
   sampleTitle?: string;
