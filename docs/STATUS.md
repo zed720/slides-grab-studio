@@ -37,11 +37,11 @@ $ claude
 
 ## 1. 지금 어디 있나
 
-**Phase 1 사양 완전 만족 + 내보내기 + Phase 2 첫 단추 (휴지통) + 배포 패키지까지 진행.**
+**Phase 1 사양 완전 만족 + 내보내기 + Phase 2 (휴지통 + 내 양식 v1) + 배포 패키지까지 진행.**
 
-`/` → `/start` → `/upload` → `/templates` → `/outline/[id]` → `/deck/[id]` 전체 흐름이 실제 AI 호출로 동작. 라이브러리에서 만든 deck 다시 보기 / 삭제(휴지통) / 복원 / 영구 삭제. 내보내기 4 형식 (PDF / PNG / PPTX / Figma) 중 PDF·PPTX·Figma 동작 (PNG 는 upstream packaging 누락으로 일시 비활성). macOS 비개발자용 `.app` 번들 + ZIP 안에 `설치하기.command` 동봉으로 다운로드 → 우클릭→열기 한 번이면 `/Applications/` 자동 설치 + 실행까지.
+`/` → `/start` → `/upload` → `/templates` → `/outline/[id]` → `/deck/[id]` 전체 흐름이 실제 AI 호출로 동작. 라이브러리에서 만든 deck 다시 보기 / 삭제(휴지통) / 복원 / 영구 삭제. 내보내기 4 형식 (PDF / PNG / PPTX / Figma) 중 PDF·PPTX·Figma 동작 (PNG 는 upstream packaging 누락으로 일시 비활성). **`/my-templates` 에서 회사 양식 (로고·주색·강조색·폰트) 등록 → `/templates` 픽커에 자동 노출 → 그 양식 선택하면 deck 가 그 brand 로 만들어짐** (사내 배포 시 슬라이드가 회사 색·로고로 일관되게 나옴). macOS 비개발자용 `.app` 번들 + ZIP 안에 `설치하기.command` 동봉으로 다운로드 → 우클릭→열기 한 번이면 `/Applications/` 자동 설치 + 실행까지.
 
-남은 건 후속 polish (slides-grab upstream PR 머지, PNG 재활성) 와 본격 Phase 2 (복제, 되돌리기 기록, 회사 테마 등).
+남은 건 후속 polish (slides-grab upstream PR 머지, PNG 재활성) 와 내 양식 v2 (archetype 7종 갤러리) · v3 (AI 새 모양 만들기), 본격 Phase 2 (복제, 되돌리기 기록 등).
 
 ---
 
@@ -232,6 +232,17 @@ slides-grab figma   --slides-dir output --output <name>-figma.pptx              
   - **Lint 청소** — `app/deck/[id]/page.tsx` 의 unescaped `"` 13개를 한국어 typographic `“”` 로 통일. ref-during-render 1곳 `useEffect([editState])` 로 감쌈. setState-in-effect 3곳 (mount 1회 fetch 패턴, cascading 위험 없음 확인 후 disable + 주석). `lib/decks/generator.ts` 의 unused `_total` 제거.
 - 2026-05-25: `.app` launcher PATH 보강 — Finder/launchd 가 띄운 `.app` 의 PATH 가 `/usr/bin:/bin:/usr/sbin:/sbin` 뿐이라 brew·`~/.local/bin`·`~/.npm-global`·volta·nvm 등에 설치된 `claude`/`codex` 를 못 보던 문제 (provider 점검 화면이 "설치 안 됨" 으로 잘못 표시). `Slides-Grab Studio.app/Contents/MacOS/SlidesGrabStudio` 가 production 분기에서 `/bin/zsh -ilc 'printf %s "$PATH"'` 로 사용자 인터랙티브 셸의 PATH 를 한 번 평가해서 export. zsh 실패 시 bash fallback, 둘 다 실패하면 `$HOME/.local/bin:$HOME/.npm-global/bin:$HOME/.volta/bin:/opt/homebrew/bin:/usr/local/bin` 안전망 추가. dev fallback 분기는 어차피 Terminal 에서 띄우는 거라 PATH 가 정상 → 영향 없음.
 - 2026-05-25: 배포 ZIP 안에 설치 스크립트 동봉 — 사용자가 다운로드 후 `.app` 만 더블클릭 → Gatekeeper 가드에 막혀 헤매던 흐름 단축. `scripts/installer-template/{설치하기.command,읽어보기.txt}` 신설, `scripts/build-mac-arm64.sh` step 9 가 ZIP 묶기 전에 `dist/Slides-Grab Studio/` 폴더 만들어서 `.app` + 두 파일 같이 넣음. `설치하기.command` 는 우클릭→열기 한 번이면 (1) quarantine 제거 (2) `/Applications/` 로 복사 (권한 부족 시 sudo fallback) (3) 자동 실행 (4) 3초 뒤 터미널 자동 닫힘. 두 번째부터는 런치패드/Applications 에서 그냥 클릭. `읽어보기.txt` 는 "처음 한 번은 우클릭→열기" 안내 + 트러블슈팅.
+- 2026-05-25: 내 양식 v1 — 사내 배포를 위한 회사 브랜드 양식. 비개발자가 회사 로고·주색·강조색·폰트를 한 번 등록하면 새 deck 만들 때 그대로 적용. 사용자 지적 ("slides-grab 디자인 셋이 개인용이라 회사용으로 맞춤 안 됨") 해결. **v1 범위는 brand kit 만** — archetype 갤러리 (표지/목차/본문/표/차트/이미지/마무리 7종) 는 v2, AI 새 모양 만들기는 v3 (mockup `docs/mockups/14-template-builder.html` 의 1번 섹션만 구현, 2번 섹션은 placeholder).
+  - **DB**: migration v4, `custom_templates` 테이블 (id, name, brand_json, created_at, updated_at, deleted_at). brand_json = `BrandKit { primaryColor, accentColor, fontFamily, logoPath }` 직렬화. soft delete (decks 와 같은 패턴).
+  - **타입 + queries**: `lib/custom-templates/types.ts` (`BrandKit`, `DEFAULT_BRAND_KIT`, `ALLOWED_FONTS` 5종), `lib/db/queries/custom-templates.ts` (CRUD + soft delete + `parseBrand`).
+  - **로고 디스크 저장**: `lib/storage.ts:customTemplatesDir(id)` = `dataRoot()/custom-templates/<id>/`. 로고 파일명 `logo.{png,jpg,jpeg,svg,webp}`, 5MB 상한, 화이트리스트.
+  - **API**: `app/api/my-templates/` 5 라우트 — `GET/POST` (목록·생성), `[id]/{GET,PATCH,DELETE}` (CRUD), `[id]/logo/{POST,DELETE}` + `logo/file/GET` (업로드/삭제/서빙). hex 색은 `#RRGGBB` 검증, 폰트는 `ALLOWED_FONTS` 화이트리스트, logoPath 는 별도 업로드 API 에서만 갱신.
+  - **빌더 미리보기**: `lib/custom-templates/preview.ts:buildPreviewHtml()` — brand kit 으로 sample 표지 슬라이드 HTML 생성 (로고 + 큰 제목 + rule line). `GET /api/my-templates/[id]/preview?primary&accent&font` — DB 의 brand 가 기본, query 로 override (빌더가 저장 전에 색 바꾸는 중에도 iframe 가 즉시 반영하게).
+  - **컴포넌트**: `components/ColorPicker.tsx` (네이티브 input[type=color] swatch + hex 입력 + 프리셋 6개 + recent), `components/MyTemplateBuilder.tsx` (mockup 14 의 1번 섹션 그대로 — 로고/주색/강조색/폰트 4셀 grid + 라이브 미리보기 iframe + sticky 저장 바). archetype 섹션은 placeholder 카드 ("다음 업데이트").
+  - **페이지**: `/my-templates` 목록 (iframe preview 카드 + 새로 만들기 + 삭제), `/my-templates/new` (POST 후 redirect), `/my-templates/[id]` (server component → MyTemplateBuilder). TopNav 가 active step 없을 때만 "내 양식" 보조 링크 노출 (deck 만드는 흐름 중간엔 step crumbs 우선).
+  - **/templates picker 통합**: `/api/templates` 가 custom 도 같이 반환 (id 에 `custom:` prefix). `/templates` 페이지의 `TemplateCard` 가 custom 인 경우 좌상단 "내 양식" 배지 + preview iframe 직접 (modal 진입 X). 사용자 양식이 항상 slides-grab 35종 위에 표시.
+  - **핵심 — deck 생성에 brand 주입**: `generator.ts:styleInstruction()` 이 `template_id` 가 `custom:<uuid>` 시작이면 DB 에서 brand 읽어 `brandKitToInstruction()` 으로 AI prompt instruction text 박음. **BITREE 패턴 재사용** — 별도 slides-grab 통합 spike 불필요, `BITREE_DESIGN_INSTRUCTIONS` 와 같은 길로 사용자 양식이 prompt 에 들어감. 양식이 지워져 있으면 instruction 없이 진행 (slides-grab 기본 디자인 fallback).
+  - **검증**: typecheck + lint clean (기존 dist/ minified 코드 잡히는 false positive 제외). e2e (양식 만들기 → deck 생성 → 결과 확인) 는 사용자 직접 실측 단계.
 
 ---
 
