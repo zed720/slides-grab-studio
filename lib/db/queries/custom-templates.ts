@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { getDb } from "../index";
-import type { BrandKit, CustomTemplate } from "@/lib/custom-templates/types";
+import type {
+  AIArchetypeEntry,
+  ArchetypeKey,
+  BrandKit,
+  CustomTemplate,
+} from "@/lib/custom-templates/types";
 import { DEFAULT_BRAND_KIT } from "@/lib/custom-templates/types";
 
 export function createCustomTemplate(input: {
@@ -83,4 +88,34 @@ export function parseBrand(tpl: CustomTemplate): BrandKit {
   } catch {
     return { ...DEFAULT_BRAND_KIT };
   }
+}
+
+// AI 생성 옵션 한 개 추가 — 해당 archetype 의 aiArchetypes 배열 끝에 push.
+export function addAIArchetype(id: string, entry: AIArchetypeEntry): void {
+  const tpl = getCustomTemplate(id);
+  if (!tpl || tpl.deleted_at !== null) {
+    throw new Error("양식을 찾을 수 없어요.");
+  }
+  const brand = parseBrand(tpl);
+  const ai = { ...(brand.aiArchetypes ?? {}) };
+  const list = [...(ai[entry.archKey] ?? []), entry];
+  ai[entry.archKey] = list;
+  brand.aiArchetypes = ai;
+  updateCustomTemplate(id, { brand });
+}
+
+// AI 생성 옵션 한 개 삭제 — archetype + id 매칭.
+export function removeAIArchetype(
+  id: string,
+  archKey: ArchetypeKey,
+  entryId: string,
+): void {
+  const tpl = getCustomTemplate(id);
+  if (!tpl || tpl.deleted_at !== null) return;
+  const brand = parseBrand(tpl);
+  const ai = { ...(brand.aiArchetypes ?? {}) };
+  const list = (ai[archKey] ?? []).filter((e) => e.id !== entryId);
+  ai[archKey] = list;
+  brand.aiArchetypes = ai;
+  updateCustomTemplate(id, { brand });
 }
