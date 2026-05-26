@@ -61,6 +61,19 @@ export async function GET(_req: Request, { params }: Params) {
     }
   }
 
+  // failed 인데 디스크에는 계획된 분량 다 있는 케이스 — AI 가 슬라이드 다 만들고
+  // 마지막 validate 같은 단계에서 nonzero exit 했을 가능성. 사용자 의도로는
+  // 완성된 상태라 ready 로 auto-flip. (부분 완성된 failed 는 그대로 — 사용자에게
+  // "이어서 만들기" 옵션 제시.)
+  if (deck.status === "failed" && !isBulk) {
+    const after = listSlidesByDeck(id);
+    const planned = plannedSlideTotal(deck);
+    if (after.length > 0 && after.length >= planned) {
+      updateDeck(id, { status: "ready" });
+      deck = getDeck(id) ?? deck;
+    }
+  }
+
   const slides = listSlidesByDeck(id);
   const plannedTotal = plannedSlideTotal(deck);
   const stage = deriveStage(
