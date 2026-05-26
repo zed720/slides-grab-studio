@@ -177,6 +177,50 @@ export function startDesign(deckId: string): { started: boolean } {
   return { started: true };
 }
 
+// resume — failed 또는 generating-stuck deck 의 부분 진행 (디스크의 slide-NN.html)
+// 그대로 두고 그 다음 장부터 만들게. outline.md 있어야. 토큰 절약 + 사용자 시간 절약.
+//   failed/generating → generating → ready
+export type ResumeOutcome =
+  | { started: true }
+  | { started: false; reason: string };
+
+export function resumeDesign(deckId: string): ResumeOutcome {
+  const deck = getDeck(deckId);
+  if (!deck) return { started: false, reason: "발표 자료를 찾을 수 없어요." };
+  if (generating.has(deckId)) {
+    return { started: false, reason: "지금 만들고 있어요." };
+  }
+  // failed 가 정석. outline-ready 면 그냥 startDesign 쓰면 됨. ready 면 이어갈 게 없음.
+  if (deck.status !== "failed") {
+    return {
+      started: false,
+      reason: "이어 만들 수 있는 상태가 아니에요. (실패한 발표만 가능)",
+    };
+  }
+  const wd = deckDir(deckId);
+  const outlinePath = path.join(wd, "slide-outline.md");
+  if (!fssync.existsSync(outlinePath)) {
+    return {
+      started: false,
+      reason: "outline 파일이 없어 이어 만들 수 없어요. 처음부터 다시 만들어 주세요.",
+    };
+  }
+
+  generating.add(deckId);
+  updateDeck(deckId, { status: "generating" });
+
+  void runResume(deckId)
+    .catch((err) => {
+      console.error("[deck-resumer] failed", deckId, err);
+      try {
+        updateDeck(deckId, { status: "failed" });
+      } catch {}
+    })
+    .finally(() => generating.delete(deckId));
+
+  return { started: true };
+}
+
 async function runPlanning(deckId: string): Promise<void> {
   const deck = getDeck(deckId);
   if (!deck) throw new Error("Deck not found");
@@ -208,6 +252,52 @@ async function runDesign(deckId: string): Promise<void> {
   const finalSlides = listSlidesByDeck(deckId);
   if (finalSlides.length === 0) {
     throw new Error("AI 가 슬라이드를 한 장도 만들지 못했어요.");
+  }
+  updateDeck(deckId, { status: "ready" });
+}
+
+// resume — 부분 진행 보존 + 나머지만. failed 상태에서 호출됨.
+async function runResume(deckId: string): Promise<void> {
+  const deck = getDeck(deckId);
+  if (!deck) throw new Error("Deck not found");
+  const wd = deckDir(deckId);
+  ensureDir(wd);
+  ensureDir(deckOutputDir(deckId));
+
+  // 디스크의 기존 slide-NN.html max idx 확인
+  const outDir = deckOutputDir(deckId);
+  const existingFiles = fssync.existsSync(outDir)
+    ? fssync.readdirSync(outDir)
+    : [];
+  const existingIdxs = existingFiles
+    .map((f) => /^slide-(\d+)\.html?$/i.exec(f))
+    .filter((m): m is RegExpExecArray => m !== null)
+    .map((m) => parseInt(m[1], 10))
+    .sort((a, b) => a - b);
+  const completedCount = existingIdxs.length;
+  const lastIdx = existingIdxs.length > 0 ? existingIdxs[existingIdxs.length - 1] : 0;
+  const startFromIdx = lastIdx + 1;
+
+  const prompt = buildResumePrompt(deck, {
+    completedCount,
+    startFromIdx,
+    completedFileList: existingFiles
+      .filter((f) => /^slide-\d+\.html?$/i.test(f))
+      .sort()
+      .join(", "),
+  });
+  await spawnAi(deck, prompt, wd, deckId);
+
+  await syncSlidesFromDisk(deckId);
+  const finalSlides = listSlidesByDeck(deckId);
+  if (finalSlides.length === 0) {
+    throw new Error("AI 가 슬라이드를 한 장도 만들지 못했어요.");
+  }
+  // 추가 슬라이드가 정말 늘었는지 — 안 늘었으면 AI 가 사실상 아무것도 안 한 거.
+  if (finalSlides.length <= completedCount) {
+    throw new Error(
+      `이어 만들기를 시도했지만 새 슬라이드가 늘지 않았어요 (${completedCount} 장 그대로). 잠시 후 다시 시도해 주세요.`,
+    );
   }
   updateDeck(deckId, { status: "ready" });
 }
@@ -452,6 +542,36 @@ function buildDesignPrompt(deck: Deck): string {
     "**우리 앱의 수정 도구 호환 (중요)** — 사용자가 완성된 슬라이드를 클릭해서 텍스트를 직접 수정합니다. 모든 텍스트는 반드시 `<p>` / `<h1>`~`<h6>` / `<li>` 안에 넣어 주세요. `<div>` 안에 텍스트를 직접 넣으면 수정 도구가 텍스트 박스로 인식 못 합니다.",
     styleBlock,
   ].filter((s) => s !== "").join("\n");
+}
+
+// resume 전용 prompt — 이미 완성된 N 장 절대 안 만지고 N+1 부터 만들게 강한 anchor.
+function buildResumePrompt(
+  deck: Deck,
+  opts: { completedCount: number; startFromIdx: number; completedFileList: string },
+): string {
+  const isCodex = deck.provider_id === "codex";
+  const toolLabel = isCodex ? "Codex" : "Claude Code";
+  const invokeLabel = isCodex ? "`codex exec`" : "`claude -p`";
+  const styleBlock = styleInstruction(deck, { withFrontmatter: false });
+
+  const startFile = `slide-${String(opts.startFromIdx).padStart(2, "0")}.html`;
+
+  return [
+    `이 작업은 **이전에 만들다 중간에 끊긴 발표 자료를 이어 만드는 것**입니다. 작업 폴더 root 의 \`slide-outline.md\` 는 사용자 검토를 거친 최종본 그대로이고, \`output/\` 폴더에는 **이미 ${opts.completedCount} 장이 만들어져 있어요**.`,
+    "",
+    `**이미 만들어진 파일 (절대 수정·삭제 X)**: ${opts.completedFileList}`,
+    "",
+    `**해야 할 일**: \`output/${startFile}\` 부터 시작해서 outline 의 끝까지 나머지 슬라이드를 만들어 주세요. 위에 나열된 기존 파일들은 사용자가 이미 검토 완료한 결과물이라 **읽거나 수정하지 마세요** — 그들의 모양·색·구조를 새 슬라이드와 일관되게 맞추는 데 참고만 (read 도 최소화).`,
+    "",
+    `**slides-grab 의 design + validate skill** 사용 (이 사용자의 ${toolLabel} 에 설치돼 있어요). plan skill 은 이미 끝났으니 다시 실행하지 마세요. outline 의 내용을 임의로 바꾸지 마세요. validate 단계에서 기존 파일들에 대해 에러 보고가 나와도 그건 무시하고 새로 만든 파일만 통과시키면 됩니다.`,
+    "",
+    `**자동화 환경 안내** — 이건 non-interactive ${invokeLabel} 호출이라 사용자가 중간 단계에서 응답할 수 없습니다. design / validate 의 "사용자 승인" 룰은 자동으로 받은 것으로 간주하고 한 번에 끝까지 진행하세요.`,
+    "",
+    "**우리 앱의 수정 도구 호환 (중요)** — 사용자가 완성된 슬라이드를 클릭해서 텍스트를 직접 수정합니다. 모든 텍스트는 반드시 `<p>` / `<h1>`~`<h6>` / `<li>` 안에 넣어 주세요. `<div>` 안에 텍스트를 직접 넣으면 수정 도구가 텍스트 박스로 인식 못 합니다.",
+    styleBlock,
+  ]
+    .filter((s) => s !== "")
+    .join("\n");
 }
 
 // template_id 별 디자인 instruction —
