@@ -73,6 +73,11 @@ export default function DeckPage() {
   // 이어 만들기 (v0.3.1) — failed deck 에서 N+1 장부터 만들기
   const [resuming, setResuming] = useState(false);
   const [resumeError, setResumeError] = useState<string | null>(null);
+  // 발표 구조 보기 (v0.3.2) — outline.md 모달
+  const [outlineModalOpen, setOutlineModalOpen] = useState(false);
+  const [outlineContent, setOutlineContent] = useState<string | null>(null);
+  const [outlineError, setOutlineError] = useState<string | null>(null);
+  const [duplicating, setDuplicating] = useState(false);
   const autoFollowRef = useRef(true);
   const editStateRef = useRef<EditState>(editState);
   useEffect(() => {
@@ -512,6 +517,30 @@ export default function DeckPage() {
             }
             setExportModalOpen(true);
           }}
+          onOpenOutline={async () => {
+            setOutlineError(null);
+            setOutlineContent(null);
+            setOutlineModalOpen(true);
+            try {
+              const res = await fetch(`/api/decks/${deckId}/outline`, {
+                cache: "no-store",
+              });
+              const data = (await res.json().catch(() => null)) as {
+                content?: string;
+                error?: string;
+              } | null;
+              if (!res.ok || !data?.content) {
+                throw new Error(data?.error ?? `요청 실패 (${res.status})`);
+              }
+              setOutlineContent(data.content);
+            } catch (err) {
+              setOutlineError(
+                err instanceof Error
+                  ? err.message
+                  : "발표 구조를 불러오지 못했어요.",
+              );
+            }
+          }}
         />
       </div>
 
@@ -534,6 +563,41 @@ export default function DeckPage() {
             setBulkModalOpen(false);
             // 즉시 폴링 재시작 — stage 가 bulk-editing 으로 바로 잡혀야 사용자 화면 반응
             setRefreshSignal((n) => n + 1);
+          }}
+        />
+      ) : null}
+
+      {outlineModalOpen ? (
+        <OutlineModal
+          content={outlineContent}
+          error={outlineError}
+          duplicating={duplicating}
+          onClose={() => setOutlineModalOpen(false)}
+          onDuplicate={async () => {
+            setDuplicating(true);
+            try {
+              const res = await fetch(
+                `/api/decks/${deckId}/duplicate-from-outline`,
+                { method: "POST" },
+              );
+              const data = (await res.json().catch(() => null)) as {
+                deckId?: string;
+                error?: string;
+              } | null;
+              if (!res.ok || !data?.deckId) {
+                throw new Error(data?.error ?? `요청 실패 (${res.status})`);
+              }
+              // 새 deck 의 outline 검토 페이지로 이동 — 그 곳에서 검토 후 "이대로 만들기"
+              const qs = providerId ? `?provider=${providerId}` : "";
+              window.location.href = `/outline/${data.deckId}${qs}`;
+            } catch (err) {
+              setOutlineError(
+                err instanceof Error
+                  ? err.message
+                  : "새 발표 자료를 만들지 못했어요.",
+              );
+              setDuplicating(false);
+            }
           }}
         />
       ) : null}
@@ -746,6 +810,7 @@ function MainPanel({
   onOpenBulkEdit,
   exportPhase,
   onOpenExport,
+  onOpenOutline,
 }: {
   deckId: string;
   deckTitle: string;
@@ -762,6 +827,7 @@ function MainPanel({
   onOpenBulkEdit: () => void;
   exportPhase: ExportPhase;
   onOpenExport: () => void;
+  onOpenOutline: () => void;
 }) {
   const hasCurrent = completedIdxs.has(selectedIdx);
   const prevIdx = findPrev(completedIdxs, selectedIdx);
@@ -801,6 +867,14 @@ function MainPanel({
           >
             ← 디자인 바꾸기
           </Link>
+          <button
+            type="button"
+            onClick={onOpenOutline}
+            className="inline-flex items-center gap-2 rounded-[10px] border border-[var(--border)] bg-transparent px-3 py-2 text-[13px] font-medium text-[var(--text)] hover:bg-[var(--surface-2)]"
+            title="발표 자료의 outline (구조) 보기"
+          >
+            📋 발표 구조
+          </button>
           <button
             type="button"
             onClick={editingEnabled ? onOpenBulkEdit : undefined}
@@ -1072,6 +1146,113 @@ function BulkEditModal({
             className="rounded-[10px] border border-[var(--accent)] bg-[var(--accent)] px-5 py-2 text-[13.5px] font-semibold text-white hover:opacity-90 disabled:opacity-50"
           >
             {submitting ? "보내는 중…" : "✨ 적용"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OutlineModal({
+  content,
+  error,
+  duplicating,
+  onClose,
+  onDuplicate,
+}: {
+  content: string | null;
+  error: string | null;
+  duplicating: boolean;
+  onClose: () => void;
+  onDuplicate: () => void;
+}) {
+  const loading = content === null && error === null;
+  const [copied, setCopied] = useState(false);
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/55 p-6 backdrop-blur-sm"
+      onClick={() => !duplicating && onClose()}
+    >
+      <div
+        className="flex h-[85vh] w-full max-w-[920px] flex-col overflow-hidden rounded-[16px] bg-[var(--surface)] shadow-[var(--shadow-lg)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-3 border-b border-[var(--border)] px-5 py-4">
+          <span className="text-[16px] font-bold tracking-[-0.01em]">
+            📋 발표 구조 (outline)
+          </span>
+          <span className="text-[12.5px] text-[var(--text-muted)]">
+            AI 가 발표 자료를 만들 때 사용한 설계도예요.
+          </span>
+          <div className="flex-1" />
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={duplicating}
+            className="rounded-md px-2 py-1 text-[var(--text-muted)] hover:bg-[var(--surface-2)] disabled:opacity-40"
+            aria-label="닫기"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-auto bg-[var(--surface-2)] p-4">
+          {loading ? (
+            <div className="text-center text-[14px] text-[var(--text-muted)]">
+              불러오는 중…
+            </div>
+          ) : error ? (
+            <div className="rounded-lg border border-[rgba(239,68,68,0.25)] bg-[var(--danger-soft)] px-4 py-3 text-[13.5px] font-semibold text-[var(--danger)]">
+              {error}
+            </div>
+          ) : (
+            <pre className="m-0 h-full whitespace-pre-wrap break-words rounded-lg border border-[var(--border)] bg-white p-4 font-mono text-[13px] leading-[1.6] text-[var(--text)]">
+              {content}
+            </pre>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 border-t border-[var(--border)] px-5 py-3">
+          {content ? (
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(content);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1500);
+                } catch {
+                  // clipboard 권한 거부 시 silent — 사용자가 직접 선택해서 복사 가능
+                }
+              }}
+              disabled={duplicating}
+              className="rounded-[10px] border border-[var(--border)] bg-transparent px-3 py-2 text-[13px] font-semibold text-[var(--text)] hover:bg-[var(--surface-2)] disabled:opacity-40"
+            >
+              {copied ? "✓ 복사됨" : "📋 복사"}
+            </button>
+          ) : null}
+          <div className="flex-1" />
+          {content ? (
+            <button
+              type="button"
+              onClick={onDuplicate}
+              disabled={duplicating}
+              className="rounded-[10px] border border-[var(--accent)] bg-[var(--accent-soft)] px-3 py-2 text-[13px] font-semibold text-[var(--accent)] hover:bg-[#dbeafe] disabled:opacity-40"
+              title="원본은 그대로 두고 이 outline 으로 새 발표 자료를 만듭니다 (디자인·내용 같은 거 그대로)"
+            >
+              {duplicating
+                ? "새로 만드는 중…"
+                : "🔁 이 구조로 새로 만들기"}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={duplicating}
+            className="rounded-[10px] border border-[var(--border)] bg-transparent px-3 py-2 text-[13px] font-semibold text-[var(--text)] hover:bg-[var(--surface-2)] disabled:opacity-40"
+          >
+            닫기
           </button>
         </div>
       </div>
