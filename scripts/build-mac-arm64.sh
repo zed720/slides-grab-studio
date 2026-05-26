@@ -260,7 +260,12 @@ xattr -cr "$BUNDLE_DIR" 2>/dev/null || true
 
 cd "$DIST"
 rm -f "$ZIP_NAME"
-zip -r -q "$ZIP_NAME" "Slides-Grab Studio"
+# -y : symlink 를 link 로 저장 (dereference X). pnpm 의 hoisted symlinks
+# (.pnpm/next@.../node_modules/@swc, /react 등) 를 보존해야 사용자 머신에서
+# Node 의 require walk-up resolution 이 정상 동작.
+# 없으면 사용자 머신에선 next 가 실제 디렉토리로 풀려서
+# `Cannot find module '@swc/helpers/_/...'` 같은 MODULE_NOT_FOUND.
+zip -r -y -q "$ZIP_NAME" "Slides-Grab Studio"
 cd - >/dev/null
 
 # zip 안에 묶었으니 빌드 결과는 BUNDLE_DIR 기준으로 표시.
