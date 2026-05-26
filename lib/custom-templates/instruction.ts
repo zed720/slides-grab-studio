@@ -1,5 +1,5 @@
 import type { ArchetypeKey, BrandKit } from "./types";
-import { getArchetypeOption } from "./archetypes";
+import { resolveArchetype } from "./archetypes";
 
 // 사용자 brand kit → AI 가 따라야 할 디자인 instruction text.
 // BITREE_DESIGN_INSTRUCTIONS 패턴과 동일하게 generator prompt 에 박힘.
@@ -41,11 +41,14 @@ export function brandKitToInstruction(opts: {
   for (const key of ARCH_KEYS) {
     const choice = archetypes[key];
     if (!choice) continue;
-    const opt = getArchetypeOption(key, choice);
-    if (!opt) continue;
-    const sample = opt.render(brand, {});
+    const resolved = resolveArchetype(key, choice, brand);
+    if (!resolved) continue;
+    const label = archLabels[key];
+    const sourceLabel = resolved.isStatic
+      ? `사용자가 고른 모양: ${resolved.id} (${resolved.name})`
+      : `사용자가 AI 로 직접 만든 모양: ${resolved.name}`;
     archetypeBlocks.push(
-      `\n### ${archLabels[key]} — 사용자가 고른 모양: ${opt.id} (${opt.name})\n${opt.description}.\n\n**새 발표 자료의 ${archLabels[key]}는 아래 HTML 의 구조·레이아웃·시각 비례를 그대로 따르세요. 색·폰트는 위 brand spec 이 이미 적용된 상태이고, 텍스트만 발표 콘텐츠로 교체하세요. 로고 부분의 \`<span>BR</span>\` placeholder 는 사용자 로고 파일의 \`<img>\` 로 교체.**\n\n\`\`\`html\n${sample}\n\`\`\``,
+      `\n### ${label} — ${sourceLabel}\n${resolved.description}.\n\n**새 발표 자료의 ${label}는 아래 HTML 의 구조·레이아웃·시각 비례를 그대로 따르세요. 색·폰트는 위 brand spec 이 이미 적용된 상태이고, 텍스트만 발표 콘텐츠로 교체하세요. 로고 부분의 \`<span>BR</span>\` placeholder 는 사용자 로고 파일의 \`<img>\` 로 교체.**\n\n\`\`\`html\n${resolved.html}\n\`\`\``,
     );
   }
   const archetypeSection =

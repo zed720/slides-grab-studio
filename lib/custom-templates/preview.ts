@@ -1,5 +1,5 @@
 import type { ArchetypeMap, BrandKit } from "./types";
-import { getArchetypeOption } from "./archetypes";
+import { resolveArchetype } from "./archetypes";
 
 // 빌더 미리보기용 — 사용자 brand kit (+ 골라진 표지 archetype 있으면 그 모양)
 // 으로 sample slide HTML 한 장. 실제 deck 생성과는 별개. UI 가 iframe srcDoc/src
@@ -12,20 +12,25 @@ export function buildPreviewHtml(opts: {
 }): string {
   const { brand, logoUrl, archetypes } = opts;
 
-  // 표지 archetype 골라져 있으면 그 render 사용 (사용자가 갤러리에서 본 그 모양
-  // 그대로 미리보기에 표시). archetype 의 logoPlaceholder 가 만든 BR span 을
-  // 실제 logoUrl 의 <img> 로 후처리 교체.
-  const cover = getArchetypeOption("cover", archetypes?.cover ?? null);
-  if (cover) {
-    let html = cover.render(brand, {
-      title: opts.sampleTitle ?? "2026년 상반기<br/>사업 계획",
-      subtitle: "전략기획팀 · 2026.05",
-      meta: "2026 H1 · 내부 공유",
-    });
-    if (logoUrl) {
-      html = injectLogoIntoFirstSlot(html, logoUrl);
+  // 표지 archetype 골라져 있으면 그 모양 그대로 미리보기.
+  // 정적 옵션이면 brand 적용해서 render + logo placeholder 교체.
+  // AI 옵션이면 이미 brand 적용된 final snapshot 이라 그대로 (사용자가 만든 시점의
+  // 모양 그대로 표시).
+  const resolved = resolveArchetype(
+    "cover",
+    archetypes?.cover ?? null,
+    brand,
+  );
+  if (resolved) {
+    if (resolved.isStatic) {
+      let html = resolved.html;
+      if (logoUrl) {
+        html = injectLogoIntoFirstSlot(html, logoUrl);
+      }
+      return html;
     }
-    return html;
+    // AI 옵션 — html 이 final snapshot 이라 그대로
+    return resolved.html;
   }
 
   return buildDefaultSample({

@@ -11,7 +11,7 @@ import type {
   BrandKit,
 } from "@/lib/custom-templates/types";
 import { ALLOWED_FONTS } from "@/lib/custom-templates/types";
-import { getArchetypeOption } from "@/lib/custom-templates/archetypes";
+import { resolveArchetype } from "@/lib/custom-templates/archetypes";
 
 const ARCH_KEYS: ArchetypeKey[] = [
   "cover",
@@ -115,8 +115,10 @@ export async function PATCH(
           if (v === null) {
             merged[k] = null;
           } else if (typeof v === "string") {
-            const opt = getArchetypeOption(k, v);
-            if (!opt) {
+            // 정적 옵션 또는 AI 옵션 (ai-*) 둘 다 허용. resolveArchetype 가
+            // brand 안 aiArchetypes 도 검색.
+            const resolved = resolveArchetype(k, v, current);
+            if (!resolved) {
               return NextResponse.json(
                 { error: `알 수 없는 ${k} 옵션이에요.` },
                 { status: 400 },

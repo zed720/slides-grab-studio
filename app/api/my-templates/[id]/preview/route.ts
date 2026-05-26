@@ -10,7 +10,7 @@ import type {
   BrandKit,
 } from "@/lib/custom-templates/types";
 import { ALLOWED_FONTS } from "@/lib/custom-templates/types";
-import { getArchetypeOption } from "@/lib/custom-templates/archetypes";
+import { resolveArchetype } from "@/lib/custom-templates/archetypes";
 
 const ARCH_KEYS: ArchetypeKey[] = [
   "cover",
@@ -55,12 +55,13 @@ export async function GET(
 
   // archetype 도 query 로 override 가능 (빌더가 옵션 토글하는 중에도 즉시 반영).
   // 빈 문자열이면 "안 고름" 으로 처리. query 없으면 저장된 값 fallback.
+  // 정적 + AI 옵션 둘 다 허용 (resolveArchetype 검색).
   const archetypes: ArchetypeMap = {};
   for (const k of ARCH_KEYS) {
     const q = url.searchParams.get(k);
     if (q !== null) {
       archetypes[k] =
-        q.length > 0 && getArchetypeOption(k, q) ? q : null;
+        q.length > 0 && resolveArchetype(k, q, brand) ? q : null;
     } else {
       archetypes[k] = stored.archetypes?.[k] ?? null;
     }

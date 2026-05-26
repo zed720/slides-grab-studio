@@ -499,6 +499,48 @@ export function getArchetypeOption(
   return meta?.options.find((o) => o.id === id) ?? null;
 }
 
+// 통합 lookup — 정적 옵션 + AI 옵션 둘 다 검색. id 는 "A"/"B" 같은 정적 옵션 id
+// 또는 "ai-<timestamp>-<rand>" AI 옵션 id. 결과는 html string + 메타.
+// `isStatic` 으로 호출자가 분기 (예: preview 의 로고 placeholder 교체).
+export type ResolvedArchetype = {
+  id: string;
+  name: string;
+  description: string;
+  html: string;
+  isStatic: boolean;
+};
+
+export function resolveArchetype(
+  key: ArchetypeKey,
+  id: string | null,
+  brand: BrandKit,
+): ResolvedArchetype | null {
+  if (!id) return null;
+  // 정적 옵션 — brand 적용해서 render.
+  const staticOpt = getArchetypeOption(key, id);
+  if (staticOpt) {
+    return {
+      id: staticOpt.id,
+      name: staticOpt.name,
+      description: staticOpt.description,
+      html: staticOpt.render(brand, {}),
+      isStatic: true,
+    };
+  }
+  // AI 옵션 — brand 적용된 final snapshot 그대로.
+  const ai = brand.aiArchetypes?.[key]?.find((e) => e.id === id);
+  if (ai) {
+    return {
+      id: ai.id,
+      name: ai.name,
+      description: ai.description,
+      html: ai.html,
+      isStatic: false,
+    };
+  }
+  return null;
+}
+
 function escapeHtml(s: string): string {
   return s.replace(/[<>"'&]/g, (c) => {
     if (c === "<") return "&lt;";
