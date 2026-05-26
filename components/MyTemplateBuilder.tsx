@@ -6,7 +6,11 @@ import Link from "next/link";
 import { ColorPicker } from "./ColorPicker";
 import { ArchetypePicker } from "./ArchetypePicker";
 import { ScaledSlideFrame } from "./ScaledSlideFrame";
-import type { BrandKit } from "@/lib/custom-templates/types";
+import type {
+  AIArchetypeEntry,
+  ArchetypeKey,
+  BrandKit,
+} from "@/lib/custom-templates/types";
 import { ALLOWED_FONTS } from "@/lib/custom-templates/types";
 
 type Props = {
@@ -285,9 +289,33 @@ export function MyTemplateBuilder({
           </span>
         </p>
         <ArchetypePicker
+          templateId={templateId}
           brand={brand}
           archetypes={brand.archetypes ?? {}}
           onChange={(arch) => setBrand({ ...brand, archetypes: arch })}
+          onAIGenerated={(entries: AIArchetypeEntry[]) => {
+            // 서버가 이미 brand_json 에 저장했음. 로컬 state 도 동기화해
+            // 갤러리에 즉시 표시.
+            const cur = brand.aiArchetypes ?? {};
+            const next = { ...cur };
+            for (const e of entries) {
+              const list = [...(next[e.archKey] ?? []), e];
+              next[e.archKey] = list;
+            }
+            setBrand({ ...brand, aiArchetypes: next });
+          }}
+          onAIDeleted={(archKey: ArchetypeKey, entryId: string) => {
+            // 서버 DELETE 끝난 후 호출됨. 로컬 state 도 제거.
+            const cur = brand.aiArchetypes ?? {};
+            const next = { ...cur };
+            next[archKey] = (next[archKey] ?? []).filter(
+              (e) => e.id !== entryId,
+            );
+            // 만약 그 옵션이 현재 archetype pick 이었으면 해제.
+            const nextArch = { ...(brand.archetypes ?? {}) };
+            if (nextArch[archKey] === entryId) nextArch[archKey] = null;
+            setBrand({ ...brand, aiArchetypes: next, archetypes: nextArch });
+          }}
         />
       </section>
 
