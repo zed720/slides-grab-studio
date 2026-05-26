@@ -41,6 +41,9 @@ function CheckInner() {
   const sample = searchParams.get("sample") ?? "";
   const [state, setState] = useState<FetchState>({ kind: "loading" });
   const [selectedId, setSelectedId] = useState<ProviderId | null>(null);
+  // v0.3.0 — claude 모델 선택 (sonnet/opus/haiku/"" 빈 값=Claude default).
+  // skill installed 인 카드에 dropdown 표시. 변경 시 PATCH /api/settings.
+  const [claudeModel, setClaudeModel] = useState<string>("");
 
   const load = useCallback(async () => {
     setState({ kind: "loading" });
@@ -72,7 +75,25 @@ function CheckInner() {
     // mount 시 1회 fetch — load 는 useCallback([]) 이라 사실상 한 번만 실행
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
+    // settings 도 같이
+    void fetch("/api/settings", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: { claudeModel?: string }) => setClaudeModel(d.claudeModel ?? ""))
+      .catch(() => {});
   }, [load]);
+
+  const updateClaudeModel = useCallback(async (next: string) => {
+    setClaudeModel(next);
+    try {
+      await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ claudeModel: next }),
+      });
+    } catch {
+      // 실패 시 silent — 다음 호출에 다시 시도. 사용자가 모르게 두는 게 흐름 방해 X.
+    }
+  }, []);
 
   // 어떤 provider 라도 skill 설치 중이거나 본체 설치 중이면 1s 간격 자동 폴링
   useEffect(() => {
@@ -182,6 +203,8 @@ function CheckInner() {
                 onSelect={() => setSelectedId(p.id)}
                 onInstallSkill={() => installSlidesGrabSkill(p.id)}
                 onInstallBody={() => installProviderBody(p.id)}
+                claudeModel={claudeModel}
+                onClaudeModelChange={updateClaudeModel}
               />
             ))}
           </div>
@@ -257,17 +280,23 @@ function ProviderCard({
   onSelect,
   onInstallSkill,
   onInstallBody,
+  claudeModel,
+  onClaudeModelChange,
 }: {
   provider: ProviderStatus;
   selected: boolean;
   onSelect: () => void;
   onInstallSkill: () => void;
   onInstallBody: () => void;
+  claudeModel: string;
+  onClaudeModelChange: (next: string) => void;
 }) {
   const installed = provider.installed;
   const usable = isProviderUsable(provider);
   const skill = provider.slidesGrabSkill;
   const bodyInstall = provider.bodyInstall;
+  const showModelPicker =
+    provider.id === "claude-code" && skill?.status === "installed";
   return (
     <article
       className={
@@ -357,6 +386,34 @@ function ProviderCard({
                 </span>
               </>
             )}
+          </div>
+        ) : null}
+
+        {/* 모델 선택 — Claude Code + skill installed 인 경우만. 슬라이드 작업엔
+            Sonnet 이 가성비 추천. 빈 값 = Claude Code 의 /model 설정 따름. */}
+        {showModelPicker ? (
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2 text-[13px]">
+            <span className="font-semibold text-[var(--text)]">모델</span>
+            <select
+              value={claudeModel}
+              onChange={(e) => onClaudeModelChange(e.target.value)}
+              className="rounded-md border-[1.5px] border-[var(--border)] bg-white px-2 py-1 text-[12.5px] outline-none focus:border-[var(--primary)]"
+              aria-label="Claude 모델 선택"
+            >
+              <option value="sonnet">Sonnet (추천)</option>
+              <option value="opus">Opus (느림·비쌈)</option>
+              <option value="haiku">Haiku (빠름·간단)</option>
+              <option value="">Claude 기본값 (직접 설정)</option>
+            </select>
+            <span className="text-[11.5px] text-[var(--text-muted)]">
+              {claudeModel === "opus"
+                ? "정밀하지만 시간/비용 가장 큼"
+                : claudeModel === "haiku"
+                  ? "짧은 발표·반복 작업에 적합"
+                  : claudeModel === ""
+                    ? "터미널 claude 의 /model 설정을 따름"
+                    : "가성비 좋음 — 발표 작업 기본 추천"}
+            </span>
           </div>
         ) : null}
       </div>
