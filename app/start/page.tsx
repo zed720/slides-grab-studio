@@ -444,11 +444,12 @@ function ProviderCard({
 
 // provider 가 "이걸로 사용" 가능한지 — Claude Code 는 skill 까지 OK 일 때만, Codex 는 installed 만
 function isProviderUsable(p: ProviderStatus): boolean {
+  // 본체 + slides-grab skill 둘 다 깔려야 사용 가능. 둘 중 하나 빠지면
+  // 카드에 ⚡ 자동 설치 버튼 노출 (UI 의 다른 분기). codex 도 skill
+  // (~/.agents/skills/slides-grab-*) 필요 — 이전엔 codex 분기가 skill
+  // 무시하고 무조건 usable 반환해서 자동 설치 버튼 안 뜨던 버그.
   if (!p.installed) return false;
-  if (p.id === "claude-code") {
-    return p.slidesGrabSkill?.status === "installed";
-  }
-  return true;
+  return p.slidesGrabSkill?.status === "installed";
 }
 
 function LoadingGrid() {
