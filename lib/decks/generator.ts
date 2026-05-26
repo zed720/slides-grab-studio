@@ -14,6 +14,7 @@ import {
 } from "@/lib/db/queries/custom-templates";
 import { insertSlide, listSlidesByDeck } from "@/lib/db/queries/slides";
 import { brandKitToInstruction } from "@/lib/custom-templates/instruction";
+import { buildClaudeArgs } from "@/lib/providers/claude-args";
 import { BITREE_DESIGN_INSTRUCTIONS } from "@/lib/slides-grab/bitree-template";
 import {
   dataRoot,
@@ -237,7 +238,7 @@ async function spawnAi(
     ];
   } else {
     cmd = "claude";
-    args = ["-p", prompt, "--dangerously-skip-permissions"];
+    args = buildClaudeArgs(prompt);
   }
   console.log(`[deck-generator] ${deckId}: spawn ${cmd} (cwd=${wd})`);
   await runProvider({ cmd, args, cwd: wd, env, deckId });
@@ -274,7 +275,7 @@ async function runGeneration(deckId: string): Promise<void> {
     ];
   } else {
     cmd = "claude";
-    args = ["-p", prompt, "--dangerously-skip-permissions"];
+    args = buildClaudeArgs(prompt);
   }
 
   console.log(`[deck-generator] ${deckId}: spawn ${cmd} (cwd=${wd})`);

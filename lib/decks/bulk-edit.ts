@@ -4,6 +4,7 @@ import fssync from "node:fs";
 import path from "node:path";
 import { getDeck, updateDeck } from "@/lib/db/queries/decks";
 import { isExporting } from "@/lib/decks/export";
+import { buildClaudeArgs } from "@/lib/providers/claude-args";
 import { deckDir, deckOutputDir, ensureDir } from "@/lib/storage";
 
 // "전체 슬라이드 일괄 수정" — 사용자 자연어 지시로 deck 의 모든 슬라이드를
@@ -94,7 +95,7 @@ async function runBulkEdit(deckId: string, instruction: string): Promise<void> {
     ];
   } else {
     cmd = "claude";
-    args = ["-p", prompt, "--dangerously-skip-permissions"];
+    args = buildClaudeArgs(prompt);
   }
 
   console.log(`[bulk-edit] ${deckId}: spawn ${cmd} (cwd=${wd})`);

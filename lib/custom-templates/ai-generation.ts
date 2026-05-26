@@ -8,6 +8,7 @@ import type {
   ArchetypeKey,
   BrandKit,
 } from "./types";
+import { buildClaudeArgs } from "@/lib/providers/claude-args";
 import { customTemplatesDir, dataRoot, ensureDir } from "@/lib/storage";
 
 // AI 가 archetype 옵션 HTML 을 생성. claude/codex CLI spawn → tmp 디렉토리에
@@ -195,7 +196,7 @@ function spawnProvider(
     ];
   } else {
     cmd = "claude";
-    args = ["-p", prompt, "--dangerously-skip-permissions"];
+    args = buildClaudeArgs(prompt);
   }
   console.log(
     `[ai-archetype] spawn ${cmd} (cwd=${wd.replace(dataRoot(), "<data>")})`,
