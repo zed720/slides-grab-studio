@@ -5,9 +5,23 @@ import {
   softDeleteCustomTemplate,
   updateCustomTemplate,
 } from "@/lib/db/queries/custom-templates";
-import type { BrandKit, ArchetypeMap } from "@/lib/custom-templates/types";
+import type {
+  ArchetypeKey,
+  ArchetypeMap,
+  BrandKit,
+} from "@/lib/custom-templates/types";
 import { ALLOWED_FONTS } from "@/lib/custom-templates/types";
 import { getArchetypeOption } from "@/lib/custom-templates/archetypes";
+
+const ARCH_KEYS: ArchetypeKey[] = [
+  "cover",
+  "toc",
+  "body",
+  "table",
+  "chart",
+  "image",
+  "closing",
+];
 
 function isHex(s: unknown): s is string {
   return typeof s === "string" && /^#[0-9a-f]{6}$/i.test(s);
@@ -95,7 +109,7 @@ export async function PATCH(
       const cur = current.archetypes ?? {};
       const inputArchetypes = body.brand.archetypes as ArchetypeMap;
       const merged: ArchetypeMap = { ...cur };
-      for (const k of ["cover", "body"] as const) {
+      for (const k of ARCH_KEYS) {
         if (k in inputArchetypes) {
           const v = inputArchetypes[k];
           if (v === null) {

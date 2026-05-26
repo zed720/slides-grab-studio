@@ -22,9 +22,23 @@ export function brandKitToInstruction(opts: {
   const archetypeBlocks: string[] = [];
   const archLabels: Record<ArchetypeKey, string> = {
     cover: "표지 슬라이드",
+    toc: "목차 슬라이드",
     body: "본문 슬라이드 (글 위주)",
+    table: "표 슬라이드",
+    chart: "차트 슬라이드",
+    image: "이미지 강조 슬라이드",
+    closing: "마무리 슬라이드",
   };
-  for (const key of ["cover", "body"] as const) {
+  const ARCH_KEYS: ArchetypeKey[] = [
+    "cover",
+    "toc",
+    "body",
+    "table",
+    "chart",
+    "image",
+    "closing",
+  ];
+  for (const key of ARCH_KEYS) {
     const choice = archetypes[key];
     if (!choice) continue;
     const opt = getArchetypeOption(key, choice);
