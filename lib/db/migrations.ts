@@ -109,4 +109,17 @@ export const migrations: Migration[] = [
       CREATE INDEX idx_custom_templates_deleted_at ON custom_templates(deleted_at);
     `,
   },
+  {
+    version: 5,
+    name: "app_settings",
+    // 앱 전역 설정 (key-value). v0.3.0 의 claude_model 같은 거.
+    // value 는 string — JSON 으로 직렬화하면 복잡 구조도 OK.
+    sql: `
+      CREATE TABLE app_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+    `,
+  },
 ];
