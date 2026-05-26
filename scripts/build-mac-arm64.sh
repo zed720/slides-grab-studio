@@ -162,8 +162,10 @@ for src_dir in node_modules/.pnpm/*/; do
   #  - slides-grab@*           — bin/ 만 들어오고 src/ 빠짐
   #  - sharp@*                 — JS 는 들어오는데 의존 binary 로딩 실패
   #  - @img+sharp-*            — native .node binary 빠짐 (lib/ 비어있음)
+  #  - @swc+helpers@*          — Next 의 transitive runtime helper. standalone tracing 이
+  #                              `_/_interop_require_default` 같은 sub-export 를 빠뜨림.
   case "$pkg" in
-    slides-grab@*|sharp@*|@img+sharp-*)
+    slides-grab@*|sharp@*|@img+sharp-*|@swc+helpers@*)
       rm -rf "$dst"
       cp -R "$src_dir" "$dst"
       ;;
