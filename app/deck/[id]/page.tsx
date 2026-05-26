@@ -70,6 +70,9 @@ export default function DeckPage() {
   const [refreshSignal, setRefreshSignal] = useState(0);
   const [exportPhase, setExportPhase] = useState<ExportPhase>({ kind: "idle" });
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  // 이어 만들기 (v0.3.1) — failed deck 에서 N+1 장부터 만들기
+  const [resuming, setResuming] = useState(false);
+  const [resumeError, setResumeError] = useState<string | null>(null);
   const autoFollowRef = useRef(true);
   const editStateRef = useRef<EditState>(editState);
   useEffect(() => {
@@ -373,24 +376,79 @@ export default function DeckPage() {
           />
         )}
         {status === "failed" ? (
-          <div className="flex items-center gap-3 rounded-[12px] border border-[rgba(239,68,68,0.25)] bg-[var(--danger-soft)] px-4 py-3 text-[13.5px] text-[var(--danger)]">
-            <span className="font-semibold">슬라이드 만들기에 실패했어요.</span>
-            <span className="text-[var(--text-muted)]">
-              내용/디자인 단계로 돌아가 다시 시도하거나, 새로 시작해 주세요.
-            </span>
-            <div className="flex-1" />
-            <Link
-              href={`/templates?deck=${deckId}${providerId ? `&provider=${providerId}` : ""}`}
-              className="rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[12.5px] font-semibold text-[var(--text)] no-underline hover:bg-[var(--surface-2)] hover:no-underline"
-            >
-              ← 디자인 다시
-            </Link>
-            <Link
-              href="/"
-              className="rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[12.5px] font-semibold text-[var(--text)] no-underline hover:bg-[var(--surface-2)] hover:no-underline"
-            >
-              내 발표 자료
-            </Link>
+          <div className="flex flex-col gap-2 rounded-[12px] border border-[rgba(239,68,68,0.25)] bg-[var(--danger-soft)] px-4 py-3 text-[13.5px] text-[var(--danger)]">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="font-semibold">
+                슬라이드 만들기 도중 멈췄어요.
+              </span>
+              {completedCount > 0 ? (
+                <span className="text-[var(--text-muted)]">
+                  이미 <b className="text-[var(--text)]">{completedCount}장</b>
+                  {" "}만들어졌어요 — AI 가 {completedCount + 1}장부터 이어서
+                  만들 수 있어요 (토큰 절약).
+                </span>
+              ) : (
+                <span className="text-[var(--text-muted)]">
+                  한 장도 못 만들었어요. 디자인 단계로 돌아가서 다시 시작해 주세요.
+                </span>
+              )}
+              <div className="flex-1" />
+              {completedCount > 0 ? (
+                <button
+                  type="button"
+                  disabled={resuming}
+                  onClick={async () => {
+                    setResumeError(null);
+                    setResuming(true);
+                    try {
+                      const res = await fetch(
+                        `/api/decks/${deckId}/resume`,
+                        { method: "POST" },
+                      );
+                      const data = (await res.json().catch(() => null)) as {
+                        started?: boolean;
+                        error?: string;
+                      } | null;
+                      if (!res.ok || !data?.started) {
+                        throw new Error(
+                          data?.error ?? `요청 실패 (${res.status})`,
+                        );
+                      }
+                      // 즉시 폴링 재시작 — status 가 generating 으로 잡혀야 UI 가 진행 화면으로
+                      setRefreshSignal((n) => n + 1);
+                    } catch (err) {
+                      setResumeError(
+                        err instanceof Error
+                          ? err.message
+                          : "이어 만들기를 시작하지 못했어요.",
+                      );
+                    } finally {
+                      setResuming(false);
+                    }
+                  }}
+                  className="rounded-[10px] border border-[var(--accent)] bg-[var(--accent)] px-3 py-1.5 text-[12.5px] font-semibold text-white hover:opacity-90 disabled:opacity-40"
+                >
+                  {resuming ? "시작 중…" : "🪄 이어서 만들기"}
+                </button>
+              ) : null}
+              <Link
+                href={`/templates?deck=${deckId}${providerId ? `&provider=${providerId}` : ""}`}
+                className="rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[12.5px] font-semibold text-[var(--text)] no-underline hover:bg-[var(--surface-2)] hover:no-underline"
+              >
+                ← 디자인 다시
+              </Link>
+              <Link
+                href="/"
+                className="rounded-[10px] border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-[12.5px] font-semibold text-[var(--text)] no-underline hover:bg-[var(--surface-2)] hover:no-underline"
+              >
+                내 발표 자료
+              </Link>
+            </div>
+            {resumeError ? (
+              <div className="text-[12px] font-semibold text-[var(--danger)]">
+                {resumeError}
+              </div>
+            ) : null}
           </div>
         ) : isEditingPage ? null : (
           <div className="flex items-center gap-2.5 rounded-[12px] border border-[#dbeafe] bg-[var(--accent-soft)] px-4 py-3 text-[13.5px]">
