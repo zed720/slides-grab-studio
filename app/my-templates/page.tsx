@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { TopNav } from "@/components/TopNav";
 import { ScaledSlideFrame } from "@/components/ScaledSlideFrame";
@@ -11,7 +11,10 @@ type Item = { id: string; name: string; brand: BrandKit; updatedAt: number };
 export default function MyTemplatesPage() {
   const [items, setItems] = useState<Item[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isNaming, setIsNaming] = useState(false);
+  const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
     try {
@@ -30,14 +33,29 @@ export default function MyTemplatesPage() {
     void load();
   }, []);
 
-  const create = async () => {
+  const startNaming = () => {
+    setError(null);
+    setNewName("");
+    setIsNaming(true);
+    // input 마운트 후 focus
+    setTimeout(() => nameInputRef.current?.focus(), 0);
+  };
+
+  const cancelNaming = () => {
+    setIsNaming(false);
+    setNewName("");
+  };
+
+  const submitNew = async () => {
+    const name = newName.trim();
+    if (!name || creating) return;
     setCreating(true);
     setError(null);
     try {
       const res = await fetch("/api/my-templates", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name: "새 양식" }),
+        body: JSON.stringify({ name }),
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as {
@@ -78,15 +96,52 @@ export default function MyTemplatesPage() {
               만들 때 한 번에 적용돼요.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={create}
-            disabled={creating}
-            className="inline-flex items-center gap-2.5 rounded-[10px] bg-[var(--primary)] px-5 py-3 text-[14px] font-semibold text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] disabled:opacity-40"
-          >
-            <span className="text-[16px]">+</span>{" "}
-            {creating ? "준비 중…" : "새 양식 만들기"}
-          </button>
+          {isNaming ? (
+            <div className="inline-flex items-center gap-2 rounded-[10px] border border-[var(--primary)] bg-white p-1.5 shadow-sm">
+              <input
+                ref={nameInputRef}
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void submitNew();
+                  } else if (e.key === "Escape") {
+                    cancelNaming();
+                  }
+                }}
+                placeholder="양식 이름 (예: 회사 표준)"
+                maxLength={80}
+                disabled={creating}
+                className="w-[220px] rounded-md border-0 bg-transparent px-2 py-1.5 text-[14px] outline-none placeholder:text-[var(--text-soft)]"
+              />
+              <button
+                type="button"
+                onClick={cancelNaming}
+                disabled={creating}
+                className="rounded-md px-2.5 py-1.5 text-[13px] text-[var(--text-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--text)] disabled:opacity-40"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={() => void submitNew()}
+                disabled={creating || !newName.trim()}
+                className="inline-flex items-center gap-1.5 rounded-md bg-[var(--primary)] px-3.5 py-1.5 text-[13.5px] font-semibold text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] disabled:opacity-40"
+              >
+                {creating ? "만드는 중…" : "만들기"}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={startNaming}
+              className="inline-flex items-center gap-2.5 rounded-[10px] bg-[var(--primary)] px-5 py-3 text-[14px] font-semibold text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)]"
+            >
+              <span className="text-[16px]">+</span> 새 양식 만들기
+            </button>
+          )}
         </div>
 
         {error ? (
