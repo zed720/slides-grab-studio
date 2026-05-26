@@ -109,11 +109,16 @@ async function runInstall(provider: ProviderId): Promise<void> {
 }
 
 function runClaudeInstall(): Promise<void> {
-  return spawnP("claude", [
-    "-p",
-    CLAUDE_INSTALL_PROMPT,
-    "--dangerously-skip-permissions",
-  ]);
+  // cwd 를 write 가능한 임시 디렉토리로 — installation/claude.md 의 step 이
+  // `npm install slides-grab` 부터 시작하는데, server 의 cwd (production .app 의
+  // /Applications/.../Resources/app) 는 read-only 라 fail. tmp 면 자유롭게 작업 +
+  // 최종 단계의 `skills add ... -g` 는 ~/.claude/skills/ 에 영구 설치.
+  const wd = fssync.mkdtempSync(path.join(os.tmpdir(), "claude-skill-install-"));
+  return spawnP(
+    "claude",
+    ["-p", CLAUDE_INSTALL_PROMPT, "--dangerously-skip-permissions"],
+    wd,
+  );
 }
 
 function runCodexInstall(): Promise<void> {
@@ -182,6 +187,9 @@ function spawnP(cmd: string, args: string[], cwd?: string): Promise<void> {
           "/login",
           "invalid api key",
           "anthropic_api_key",
+          "invalid authentication credentials",
+          "api error: 401",
+          "failed to authenticate",
         ];
         const lower = tail.toLowerCase();
         if (authKeywords.some((k) => lower.includes(k.toLowerCase()))) {
