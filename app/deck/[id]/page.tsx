@@ -770,6 +770,7 @@ function CompletedThumb({
         title={`slide ${idx + 1}`}
         src={`/api/decks/${deckId}/slides/${idx}?v=${previewBust}`}
         autoDetect
+        sandbox="allow-same-origin"
         lazy
       />
     </button>
@@ -963,6 +964,7 @@ function MainPanel({
                 title={`slide ${selectedIdx + 1}`}
                 src={`/api/decks/${deckId}/slides/${selectedIdx}?v=${previewBust}`}
                 autoDetect
+                sandbox="allow-same-origin"
                 blockInteraction={false}
                 className="rounded-[12px] bg-white shadow-[0_10px_30px_rgba(0,0,0,0.12)]"
               />
