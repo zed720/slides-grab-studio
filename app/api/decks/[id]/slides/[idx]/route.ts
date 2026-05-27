@@ -44,19 +44,26 @@ export async function GET(_req: Request, { params }: Params) {
     );
   }
 
-  // 슬라이드 HTML 안의 상대 경로 (`./assets/foo.png` 등) 가 iframe 안에서
-  // 우리의 files 라우트로 풀리도록 <base> 태그를 <head> 첫 줄에 삽입.
-  // 동시에 body 의 fixed viewport (예: slides-grab 의 720×405) 를 iframe
-  // viewport (ScaledSlideFrame 의 960×540) 100% 로 강제 — 안 그러면 미리보기에
-  // 검은 슬라이드 박스만 작게 떠서 큰 여백이 보임. PDF export 는 slides-grab CLI 가
-  // 자기 viewport (720×405) 로 직접 캡처라 영향 없음, 우리 iframe 만 영향.
+  // base 태그는 <head> 첫 줄에 — 상대 경로 (`./assets/foo.png`) 가 iframe 안에서
+  // 우리 files 라우트로 풀림.
   const basePath = `/api/decks/${id}/files/`;
   const baseTag = `<base href="${basePath}">`;
-  const fitCss = `<style>html,body{width:100%!important;height:100%!important;margin:0!important;}</style>`;
   if (/<head\b[^>]*>/i.test(html)) {
-    html = html.replace(/<head\b[^>]*>/i, (m) => m + baseTag + fitCss);
+    html = html.replace(/<head\b[^>]*>/i, (m) => m + baseTag);
   } else {
-    html = baseTag + fitCss + html;
+    html = baseTag + html;
+  }
+
+  // fit CSS 는 </head> 직전에 — slide 자체 <style> 보다 *나중에* 정의돼야
+  // cascade 에서 우리 !important 가 이김. <head> 직후에 두면 slide 의
+  // `body { width: 720px !important }` 같은 게 우리보다 나중이라 우선됨.
+  // slides-grab 의 720×405 body 가 iframe viewport (960×540) 100% 로 늘어남.
+  // PDF export 는 slides-grab CLI 가 720×405 viewport 로 직접 캡처라 영향 없음.
+  const fitCss = `<style>html,body{width:100%!important;height:100%!important;margin:0!important;}</style>`;
+  if (/<\/head>/i.test(html)) {
+    html = html.replace(/<\/head>/i, fitCss + "</head>");
+  } else {
+    html = html + fitCss;
   }
 
   // slides-grab editor 의 selection overlay (contentEditable + 녹색 dashed outline)
