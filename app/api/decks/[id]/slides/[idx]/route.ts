@@ -53,18 +53,10 @@ export async function GET(_req: Request, { params }: Params) {
   } else {
     html = baseTag + html;
   }
-
-  // fit CSS 는 </head> 직전에 — slide 자체 <style> 보다 *나중에* 정의돼야
-  // cascade 에서 우리 !important 가 이김. <head> 직후에 두면 slide 의
-  // `body { width: 720px !important }` 같은 게 우리보다 나중이라 우선됨.
-  // slides-grab 의 720×405 body 가 iframe viewport (960×540) 100% 로 늘어남.
-  // PDF export 는 slides-grab CLI 가 720×405 viewport 로 직접 캡처라 영향 없음.
-  const fitCss = `<style>html,body{width:100%!important;height:100%!important;margin:0!important;}</style>`;
-  if (/<\/head>/i.test(html)) {
-    html = html.replace(/<\/head>/i, fitCss + "</head>");
-  } else {
-    html = html + fitCss;
-  }
+  // slide HTML 의 body 는 slides-grab 표준 720×405 fixed 그대로 둠.
+  // ScaledSlideFrame 의 iframe viewport 를 같은 720×405 로 명시하면 body 가
+  // viewport 100% 차지 + transform scale 로 카드 크기에 맞음. 이전엔 viewport
+  // default 960×540 와 안 맞아 body 가 75% 만 차지 + 가운데 정렬되며 큰 여백.
 
   // slides-grab editor 의 selection overlay (contentEditable + 녹색 dashed outline)
   // 가 우리 patch + throttled auto-save 가 겹치는 타이밍에 디스크에 영구 저장되는

@@ -769,6 +769,8 @@ function CompletedThumb({
       <ScaledSlideFrame
         title={`slide ${idx + 1}`}
         src={`/api/decks/${deckId}/slides/${idx}?v=${previewBust}`}
+        baseWidth={720}
+        baseHeight={405}
         lazy
       />
     </button>
@@ -961,6 +963,8 @@ function MainPanel({
               <ScaledSlideFrame
                 title={`slide ${selectedIdx + 1}`}
                 src={`/api/decks/${deckId}/slides/${selectedIdx}?v=${previewBust}`}
+                baseWidth={720}
+                baseHeight={405}
                 blockInteraction={false}
                 className="rounded-[12px] bg-white shadow-[0_10px_30px_rgba(0,0,0,0.12)]"
               />
