@@ -46,13 +46,17 @@ export async function GET(_req: Request, { params }: Params) {
 
   // 슬라이드 HTML 안의 상대 경로 (`./assets/foo.png` 등) 가 iframe 안에서
   // 우리의 files 라우트로 풀리도록 <base> 태그를 <head> 첫 줄에 삽입.
+  // 동시에 body 의 fixed viewport (예: slides-grab 의 720×405) 를 iframe
+  // viewport (ScaledSlideFrame 의 960×540) 100% 로 강제 — 안 그러면 미리보기에
+  // 검은 슬라이드 박스만 작게 떠서 큰 여백이 보임. PDF export 는 slides-grab CLI 가
+  // 자기 viewport (720×405) 로 직접 캡처라 영향 없음, 우리 iframe 만 영향.
   const basePath = `/api/decks/${id}/files/`;
   const baseTag = `<base href="${basePath}">`;
+  const fitCss = `<style>html,body{width:100%!important;height:100%!important;margin:0!important;}</style>`;
   if (/<head\b[^>]*>/i.test(html)) {
-    html = html.replace(/<head\b[^>]*>/i, (m) => m + baseTag);
+    html = html.replace(/<head\b[^>]*>/i, (m) => m + baseTag + fitCss);
   } else {
-    // <head> 없으면 fallback — HTML 맨 앞에 붙임 (드물지만 안전망)
-    html = baseTag + html;
+    html = baseTag + fitCss + html;
   }
 
   // slides-grab editor 의 selection overlay (contentEditable + 녹색 dashed outline)
